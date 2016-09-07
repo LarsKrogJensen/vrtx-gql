@@ -37,30 +37,30 @@ class GraphqlExecutionSpec extends Specification {
     }
 
     private void runTestBatchingUnbatched(String query, Map<String, Object> expected) {
-        assert expected == this.graphQLBatchedButUnbatched.execute(query).getData();
+        assert expected == this.graphQLBatchedButUnbatched.execute(query).get().getData();
     }
 
     private void runTestBatching(String query, Map<String, Object> expected) {
-        assert expected == this.graphQLBatchedValue.execute(query).getData();
+        assert expected == this.graphQLBatchedValue.execute(query).get().getData();
     }
 
 
     private void runTestSimple(String query, Map<String, Object> expected) {
-        assert expected == this.graphQLSimple.execute(query).getData();
+        assert expected == this.graphQLSimple.execute(query).get().getData();
     }
 
     // This method is agnostic to whether errors are returned or thrown, provided they contain the desired text
     private void runTestExpectError(String query, String errorSubstring) {
 
         try {
-            ExecutionResult result = this.graphQLSimple.execute(query);
+            ExecutionResult result = this.graphQLSimple.execute(query).get();
             assert !result.getErrors().isEmpty(), "Simple should have errored but was: " + result.getData();
         } catch (Exception e) {
             assert e.getMessage().contains(errorSubstring), "Simple error must contain '" + errorSubstring + "'";
         }
 
         try {
-            ExecutionResult result = this.graphQLBatchedButUnbatched.execute(query);
+            ExecutionResult result = this.graphQLBatchedButUnbatched.execute(query).get();
             assert !result.getErrors().isEmpty(), "Batched should have errored, but was " + result.getData();
         } catch (Exception e) {
             assert e.getMessage().contains(errorSubstring), "Batched but unbatched error must contain '" + errorSubstring + "'";
@@ -416,7 +416,7 @@ class GraphqlExecutionSpec extends Specification {
 
         expect:
         Arrays.asList(this.graphQLSimple, this.graphQLBatchedButUnbatched,this.graphQLBatchedValue).each { GraphQL graphQL ->
-            Map<String, Object> response = graphQL.execute(query).getData() as Map<String, Object>;
+            Map<String, Object> response = graphQL.execute(query).get().getData() as Map<String, Object>;
             Map<String, Object> values = (response.get("string") as Map<String, Object>).get("append") as Map<String, Object>;
             assert Arrays.asList("v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8", "v9") == values.keySet().toList();
         }

@@ -6,6 +6,7 @@ import graphql.schema.DataFetchingEnvironment;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 public class SimpleListConnection implements DataFetcher {
 
@@ -29,8 +30,9 @@ public class SimpleListConnection implements DataFetcher {
 
 
     @Override
-    public Object get(DataFetchingEnvironment environment) {
+    public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
 
+        CompletableFuture<Object> promise = new CompletableFuture<>();
         List<Edge> edges = buildEdges();
 
 
@@ -41,7 +43,8 @@ public class SimpleListConnection implements DataFetcher {
 
         edges = edges.subList(begin, end);
         if (edges.size() == 0) {
-            return emptyConnection();
+            promise.complete(emptyConnection());
+            return promise;
         }
 
 
@@ -59,7 +62,8 @@ public class SimpleListConnection implements DataFetcher {
         }
 
         if (edges.size() == 0) {
-            return emptyConnection();
+            promise.complete(emptyConnection());
+            return promise;
         }
 
         Edge firstEdge = edges.get(0);
@@ -75,7 +79,8 @@ public class SimpleListConnection implements DataFetcher {
         connection.setEdges(edges);
         connection.setPageInfo(pageInfo);
 
-        return connection;
+        promise.complete(connection);
+        return promise;
     }
 
     private Connection emptyConnection() {

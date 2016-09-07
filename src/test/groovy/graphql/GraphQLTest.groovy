@@ -31,7 +31,7 @@ class GraphQLTest extends Specification {
         ).build()
 
         when:
-        def result = new GraphQL(schema).execute('{ hello }').data
+        def result = new GraphQL(schema).execute('{ hello }').get().data
 
         then:
         result == [hello: 'world']
@@ -65,7 +65,7 @@ class GraphQLTest extends Specification {
         ).build();
 
         when:
-        def result = new GraphQL(graphQLSchema).execute('{ simpson { id, name } }').data
+        def result = new GraphQL(graphQLSchema).execute('{ simpson { id, name } }').get().data
 
         then:
         result == [simpson: [id: '123', name: 'homer']]
@@ -86,7 +86,7 @@ class GraphQLTest extends Specification {
         ).build()
 
         when:
-        def errors = new GraphQL(schema).execute('{ hello(arg:11) }').errors
+        def errors = new GraphQL(schema).execute('{ hello(arg:11) }').get().errors
 
         then:
         errors.size() == 1
@@ -101,7 +101,7 @@ class GraphQLTest extends Specification {
         ).build()
 
         when:
-        def errors = new GraphQL(schema).execute('{ hello(() }').errors
+        def errors = new GraphQL(schema).execute('{ hello(() }').get().errors
 
         then:
         errors.size() == 1
@@ -118,7 +118,7 @@ class GraphQLTest extends Specification {
         ).build()
 
         when:
-        def errors = new GraphQL(schema).execute('{ hello[](() }').errors
+        def errors = new GraphQL(schema).execute('{ hello[](() }').get().errors
 
         then:
         errors.size() == 1
@@ -141,7 +141,7 @@ class GraphQLTest extends Specification {
         ).build()
 
         when:
-        def errors = new GraphQL(schema).execute('{ field }').errors
+        def errors = new GraphQL(schema).execute('{ field }').get().errors
 
         then:
         errors.size() == 1

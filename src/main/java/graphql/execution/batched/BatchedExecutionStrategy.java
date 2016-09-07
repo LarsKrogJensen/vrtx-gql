@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 import static java.util.Collections.singletonList;
 
@@ -32,29 +33,40 @@ public class BatchedExecutionStrategy extends ExecutionStrategy {
     private final BatchedDataFetcherFactory batchingFactory = new BatchedDataFetcherFactory();
 
     @Override
-    public ExecutionResult execute(ExecutionContext executionContext, GraphQLObjectType parentType, Object source, Map<String, List<Field>> fields) {
+    public CompletableFuture<ExecutionResult> execute(ExecutionContext executionContext, GraphQLObjectType parentType, Object source, Map<String, List<Field>> fields) {
         GraphQLExecutionNodeDatum data = new GraphQLExecutionNodeDatum(new LinkedHashMap<String, Object>(), source);
         GraphQLExecutionNode root = new GraphQLExecutionNode(parentType, fields, singletonList(data));
         return execute(executionContext, root);
     }
 
-    private ExecutionResult execute(ExecutionContext executionContext, GraphQLExecutionNode root) {
+    private CompletableFuture<ExecutionResult> execute(ExecutionContext executionContext, GraphQLExecutionNode root) {
 
+        CompletableFuture<ExecutionResult> promise = new CompletableFuture<>();
         Queue<GraphQLExecutionNode> nodes = new ArrayDeque<GraphQLExecutionNode>();
         nodes.add(root);
 
+        List<CompletableFuture> nodePromises = new ArrayList<>();
         while (!nodes.isEmpty()) {
 
             GraphQLExecutionNode node = nodes.poll();
 
             for (String fieldName : node.getFields().keySet()) {
                 List<Field> fieldList = node.getFields().get(fieldName);
-                List<GraphQLExecutionNode> childNodes = resolveField(executionContext, node.getParentType(),
-                        node.getData(), fieldName, fieldList);
-                nodes.addAll(childNodes);
+                nodePromises.add(resolveField(executionContext, node.getParentType(),
+                        node.getData(), fieldName, fieldList)
+                        .thenAccept(childNodes -> nodes.addAll(childNodes))
+                        .exceptionally(e -> {
+                            promise.completeExceptionally(e);
+                            return null;
+                        }));
             }
+
         }
-        return new ExecutionResultImpl(getOnlyElement(root.getData()).getParentResult(), executionContext.getErrors());
+
+        CompletableFuture[] nodePromisesArray = new CompletableFuture[nodePromises.size()];
+        CompletableFuture.allOf(nodePromises.toArray(nodePromisesArray)).thenAccept(aVoid ->
+                promise.complete(new ExecutionResultImpl(getOnlyElement(root.getData()).getParentResult(), executionContext.getErrors())));
+        return promise;
 
     }
 
@@ -66,16 +78,16 @@ public class BatchedExecutionStrategy extends ExecutionStrategy {
     // Use the data.parentResult objects to put values into.  These are either primitives or empty maps
     // If they were empty maps, we need that list of nodes to process
 
-    private List<GraphQLExecutionNode> resolveField(ExecutionContext executionContext, GraphQLObjectType parentType,
-                                                    List<GraphQLExecutionNodeDatum> nodeData, String fieldName, List<Field> fields) {
+    private CompletableFuture<List<GraphQLExecutionNode>> resolveField(ExecutionContext executionContext, GraphQLObjectType parentType,
+                                                                       List<GraphQLExecutionNodeDatum> nodeData, String fieldName, List<Field> fields) {
 
         GraphQLFieldDefinition fieldDef = getFieldDef(executionContext.getGraphQLSchema(), parentType, fields.get(0));
         if (fieldDef == null) {
-            return Collections.emptyList();
+            return CompletableFuture.completedFuture(Collections.emptyList());
         }
-        List<GraphQLExecutionNodeValue> values = fetchData(executionContext, parentType, nodeData, fields, fieldDef);
-
-        return completeValues(executionContext, parentType, values, fieldName, fields, fieldDef.getType());
+        return fetchData(executionContext, parentType, nodeData, fields, fieldDef)
+                .thenCompose(values ->
+                        CompletableFuture.completedFuture(completeValues(executionContext, parentType, values, fieldName, fields, fieldDef.getType())));
     }
 
     /**
@@ -241,8 +253,8 @@ public class BatchedExecutionStrategy extends ExecutionStrategy {
     }
 
     @SuppressWarnings("unchecked")
-    private List<GraphQLExecutionNodeValue> fetchData(ExecutionContext executionContext, GraphQLObjectType parentType,
-                                                      List<GraphQLExecutionNodeDatum> nodeData, List<Field> fields, GraphQLFieldDefinition fieldDef) {
+    private CompletableFuture<List<GraphQLExecutionNodeValue>> fetchData(ExecutionContext executionContext, GraphQLObjectType parentType,
+                                                                         List<GraphQLExecutionNodeDatum> nodeData, List<Field> fields, GraphQLFieldDefinition fieldDef) {
 
         Map<String, Object> argumentValues = valuesResolver.getArgumentValues(
                 fieldDef.getArguments(), fields.get(0).getArguments(), executionContext.getVariables());
@@ -260,24 +272,30 @@ public class BatchedExecutionStrategy extends ExecutionStrategy {
                 executionContext.getGraphQLSchema()
         );
 
-        List<Object> values;
-        try {
-            values = (List<Object>) getDataFetcher(fieldDef).get(environment);
-        } catch (Exception e) {
-            values = new ArrayList<Object>();
-            for (int i = 0; i < nodeData.size(); i++) {
-                values.add(null);
-            }
-            log.info("Exception while fetching data", e);
-            executionContext.addError(new ExceptionWhileDataFetching(e));
-        }
-        assert nodeData.size() == values.size();
+        CompletableFuture<List<GraphQLExecutionNodeValue>> promise = new CompletableFuture<>();
+        BatchedDataFetcher dataFetcher = getDataFetcher(fieldDef);
 
-        List<GraphQLExecutionNodeValue> retVal = new ArrayList<GraphQLExecutionNodeValue>();
-        for (int i = 0; i < nodeData.size(); i++) {
-            retVal.add(new GraphQLExecutionNodeValue(nodeData.get(i), values.get(i)));
-        }
-        return retVal;
+        dataFetcher.get(environment)
+                .thenApply(data -> (List<Object>) data)
+                .exceptionally(e -> {
+                    List<Object> values = new ArrayList<>();
+                    for (int i = 0; i < nodeData.size(); i++) {
+                        values.add(null);
+                    }
+                    log.info("Exception while fetching data", e);
+                    executionContext.addError(new ExceptionWhileDataFetching(e));
+                    return values;
+                })
+                .thenAccept(values -> {
+                    assert nodeData.size() == values.size();
+                    List<GraphQLExecutionNodeValue> retVal = new ArrayList<GraphQLExecutionNodeValue>();
+                    for (int i = 0; i < nodeData.size(); i++) {
+                        retVal.add(new GraphQLExecutionNodeValue(nodeData.get(i), values.get(i)));
+                    }
+                    promise.complete(retVal);
+                });
+
+        return promise;
     }
 
     private BatchedDataFetcher getDataFetcher(GraphQLFieldDefinition fieldDef) {

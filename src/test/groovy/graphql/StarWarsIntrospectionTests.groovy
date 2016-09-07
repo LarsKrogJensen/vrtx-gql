@@ -39,7 +39,7 @@ class StarWarsIntrospectionTests extends Specification {
         ];
 
         when:
-        def result = new GraphQL(StarWarsSchema.starWarsSchema).execute(query).data
+        def result = new GraphQL(StarWarsSchema.starWarsSchema).execute(query).get().data
 
         then:
         result == expected
@@ -65,7 +65,7 @@ class StarWarsIntrospectionTests extends Specification {
                 ]
         ]
         when:
-        def result = new GraphQL(StarWarsSchema.starWarsSchema).execute(query).data
+        def result = new GraphQL(StarWarsSchema.starWarsSchema).execute(query).get().data
 
         then:
         result == expected
@@ -88,7 +88,7 @@ class StarWarsIntrospectionTests extends Specification {
         ]
 
         when:
-        def result = new GraphQL(StarWarsSchema.starWarsSchema).execute(query).data
+        def result = new GraphQL(StarWarsSchema.starWarsSchema).execute(query).get().data
 
         then:
         result == expected
@@ -111,7 +111,7 @@ class StarWarsIntrospectionTests extends Specification {
                 ]
         ];
         when:
-        def result = new GraphQL(StarWarsSchema.starWarsSchema).execute(query).data
+        def result = new GraphQL(StarWarsSchema.starWarsSchema).execute(query).get().data
 
         then:
         result == expected
@@ -134,7 +134,7 @@ class StarWarsIntrospectionTests extends Specification {
                 ]
         ];
         when:
-        def result = new GraphQL(StarWarsSchema.starWarsSchema).execute(query).data
+        def result = new GraphQL(StarWarsSchema.starWarsSchema).execute(query).get().data
 
         then:
         result == expected
@@ -200,7 +200,7 @@ class StarWarsIntrospectionTests extends Specification {
                 ]
         ];
         when:
-        def result = new GraphQL(StarWarsSchema.starWarsSchema).execute(query).data
+        def result = new GraphQL(StarWarsSchema.starWarsSchema).execute(query).get().data
 
         then:
         result == expected
@@ -283,7 +283,7 @@ class StarWarsIntrospectionTests extends Specification {
                 ]
         ]
         when:
-        def result = new GraphQL(StarWarsSchema.starWarsSchema).execute(query)
+        def result = new GraphQL(StarWarsSchema.starWarsSchema).execute(query).get()
 
         then:
         result.data == expected
@@ -380,7 +380,7 @@ class StarWarsIntrospectionTests extends Specification {
         ];
 
         when:
-        def result = new GraphQL(StarWarsSchema.starWarsSchema).execute(query)
+        def result = new GraphQL(StarWarsSchema.starWarsSchema).execute(query).get()
 
         then:
         result.data == expected
@@ -404,7 +404,7 @@ class StarWarsIntrospectionTests extends Specification {
         ];
 
         when:
-        def result = new GraphQL(StarWarsSchema.starWarsSchema).execute(query)
+        def result = new GraphQL(StarWarsSchema.starWarsSchema).execute(query).get()
 
         then:
         result.data == expected
@@ -415,7 +415,7 @@ class StarWarsIntrospectionTests extends Specification {
         def query = IntrospectionQuery.INTROSPECTION_QUERY
 
         when:
-        def result = new GraphQL(StarWarsSchema.starWarsSchema).execute(query)
+        def result = new GraphQL(StarWarsSchema.starWarsSchema).execute(query).get()
 
         then:
         Map<String, Object> schema = (Map<String, Object>) result.data

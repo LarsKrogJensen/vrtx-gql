@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 import static graphql.introspection.Introspection.*;
 
@@ -19,9 +20,9 @@ public abstract class ExecutionStrategy {
     protected ValuesResolver valuesResolver = new ValuesResolver();
     protected FieldCollector fieldCollector = new FieldCollector();
 
-    public abstract ExecutionResult execute(ExecutionContext executionContext, GraphQLObjectType parentType, Object source, Map<String, List<Field>> fields);
+    public abstract CompletableFuture<ExecutionResult> execute(ExecutionContext executionContext, GraphQLObjectType parentType, Object source, Map<String, List<Field>> fields);
 
-    protected ExecutionResult resolveField(ExecutionContext executionContext, GraphQLObjectType parentType, Object source, List<Field> fields) {
+    protected CompletableFuture<ExecutionResult> resolveField(ExecutionContext executionContext, GraphQLObjectType parentType, Object source, List<Field> fields) {
         GraphQLFieldDefinition fieldDef = getFieldDef(executionContext.getGraphQLSchema(), parentType, fields.get(0));
 
         Map<String, Object> argumentValues = valuesResolver.getArgumentValues(fieldDef.getArguments(), fields.get(0).getArguments(), executionContext.getVariables());
@@ -35,34 +36,60 @@ public abstract class ExecutionStrategy {
                 executionContext.getGraphQLSchema()
         );
 
-        Object resolvedValue = null;
-        try {
-            resolvedValue = fieldDef.getDataFetcher().get(environment);
-        } catch (Exception e) {
-            log.info("Exception while fetching data", e);
-            executionContext.addError(new ExceptionWhileDataFetching(e));
+        if (fieldDef.getDataFetcher().get(environment) == null) {
+            return completeValue(executionContext, fieldDef.getType(), fields, null);
         }
 
-        return completeValue(executionContext, fieldDef.getType(), fields, resolvedValue);
+        return fieldDef.getDataFetcher().get(environment)
+                .exceptionally(e -> {
+                    executionContext.addError(new ExceptionWhileDataFetching(e));
+                    return null;
+                })
+                .thenCompose(resolvedValue -> completeValue(executionContext, fieldDef.getType(), fields, resolvedValue));
     }
 
-    protected ExecutionResult completeValue(ExecutionContext executionContext, GraphQLType fieldType, List<Field> fields, Object result) {
+    protected CompletableFuture<ExecutionResult> completeValue(ExecutionContext executionContext, GraphQLType fieldType, List<Field> fields, Object result) {
+        CompletableFuture<ExecutionResult> promise = new CompletableFuture<>();
+
         if (fieldType instanceof GraphQLNonNull) {
             GraphQLNonNull graphQLNonNull = (GraphQLNonNull) fieldType;
-            ExecutionResult completed = completeValue(executionContext, graphQLNonNull.getWrappedType(), fields, result);
-            if (completed == null) {
-                throw new GraphQLException("Cannot return null for non-nullable type: " + fields);
-            }
-            return completed;
-
+            completeValue(executionContext, graphQLNonNull.getWrappedType(), fields, result)
+                    .thenAccept(completed -> {
+                        if (completed == null) {
+                            promise.completeExceptionally(new GraphQLException("Cannot return null for non-nullable type: " + fields));
+                        } else {
+                            promise.complete(completed);
+                        }
+                    })
+                    .exceptionally(e -> {
+                        promise.completeExceptionally(e);
+                        return null;
+                    });
+            return promise;
         } else if (result == null) {
-            return null;
+            promise.complete(null);
+            return promise;
         } else if (fieldType instanceof GraphQLList) {
-            return completeValueForList(executionContext, (GraphQLList) fieldType, fields, result);
+            try {
+                return completeValueForList(executionContext, (GraphQLList) fieldType, fields, result);
+            } catch (Exception e) {
+                promise.completeExceptionally(e);
+            }
+            return promise;
         } else if (fieldType instanceof GraphQLScalarType) {
-            return completeValueForScalar((GraphQLScalarType) fieldType, result);
+            try {
+                promise.complete(completeValueForScalar((GraphQLScalarType) fieldType, result));
+            } catch (Exception e) {
+                promise.completeExceptionally(e);
+            }
+            return promise;
         } else if (fieldType instanceof GraphQLEnumType) {
-            return completeValueForEnum((GraphQLEnumType) fieldType, result);
+            try {
+                promise.complete(completeValueForEnum((GraphQLEnumType) fieldType, result));
+            } catch (Exception e) {
+                promise.completeExceptionally(e);
+            }
+            return promise;
         }
 
 
@@ -88,7 +115,7 @@ public abstract class ExecutionStrategy {
         return executionContext.getExecutionStrategy().execute(executionContext, resolvedType, result, subFields);
     }
 
-    private ExecutionResult completeValueForList(ExecutionContext executionContext, GraphQLList fieldType, List<Field> fields, Object result) {
+    private CompletableFuture<ExecutionResult> completeValueForList(ExecutionContext executionContext, GraphQLList fieldType, List<Field> fields, Object result) {
         if (result.getClass().isArray()) {
             result = Arrays.asList((Object[]) result);
         }
@@ -126,13 +153,18 @@ public abstract class ExecutionStrategy {
         return new ExecutionResultImpl(serialized, null);
     }
 
-    protected ExecutionResult completeValueForList(ExecutionContext executionContext, GraphQLList fieldType, List<Field> fields, List<Object> result) {
+    protected CompletableFuture<ExecutionResult> completeValueForList(ExecutionContext executionContext, GraphQLList fieldType, List<Field> fields, List<Object> result) {
+
+        List<CompletableFuture> completionPromises = new ArrayList<>();
         List<Object> completedResults = new ArrayList<Object>();
         for (Object item : result) {
-            ExecutionResult completedValue = completeValue(executionContext, fieldType.getWrappedType(), fields, item);
-            completedResults.add(completedValue != null ? completedValue.getData() : null);
+            completionPromises.add(completeValue(executionContext, fieldType.getWrappedType(), fields, item).thenAccept(
+                    completedValue -> completedResults.add(completedValue != null ? completedValue.getData() : null)));
         }
-        return new ExecutionResultImpl(completedResults, null);
+
+        CompletableFuture[] completionPromisesArray = new CompletableFuture[completionPromises.size()];
+        return CompletableFuture.allOf(completionPromises.toArray(completionPromisesArray)).thenApply(aVoid ->
+                new ExecutionResultImpl(completedResults, null));
     }
 
     protected GraphQLFieldDefinition getFieldDef(GraphQLSchema schema, GraphQLObjectType parentType, Field field) {

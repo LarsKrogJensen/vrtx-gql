@@ -1,7 +1,9 @@
 package graphql.schema;
 
 
+import java.util.concurrent.CompletableFuture;
+
 public interface DataFetcher {
 
-    Object get(DataFetchingEnvironment environment);
+    CompletableFuture<Object> get(DataFetchingEnvironment environment);
 }
