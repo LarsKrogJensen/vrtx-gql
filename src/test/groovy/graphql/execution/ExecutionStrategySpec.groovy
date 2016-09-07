@@ -7,6 +7,8 @@ import graphql.schema.GraphQLList
 import graphql.schema.GraphQLObjectType
 import spock.lang.Specification
 
+import java.util.concurrent.CompletableFuture
+
 class ExecutionStrategySpec extends Specification {
 
     ExecutionStrategy executionStrategy
@@ -14,8 +16,10 @@ class ExecutionStrategySpec extends Specification {
     def setup() {
         executionStrategy = new ExecutionStrategy() {
             @Override
-            ExecutionResult execute(ExecutionContext executionContext, GraphQLObjectType parentType, Object source, Map<String, List<Field>> fields) {
-                return null
+            CompletableFuture<ExecutionResult> execute(ExecutionContext executionContext, GraphQLObjectType parentType, Object source, Map<String, List<Field>> fields) {
+                CompletableFuture<ExecutionResult> promise = new CompletableFuture<>()
+                promise.complete(null)
+                return promise
             }
         }
     }
@@ -27,10 +31,10 @@ class ExecutionStrategySpec extends Specification {
         def fieldType = new GraphQLList(Scalars.GraphQLString)
         def result = Arrays.asList("test")
         when:
-        def executionResult = executionStrategy.completeValue(executionContext, fieldType, [field], result)
+        def resultPromise = executionStrategy.completeValue(executionContext, fieldType, [field], result)
 
         then:
-        executionResult.data == ["test"]
+        resultPromise.thenAccept({executionResult -> executionResult.data == ["test"]})
     }
 
 
@@ -41,10 +45,10 @@ class ExecutionStrategySpec extends Specification {
         def fieldType = new GraphQLList(Scalars.GraphQLString)
         String[] result = ["test"]
         when:
-        def executionResult = executionStrategy.completeValue(executionContext, fieldType, [field], result)
+        def resultPromise = executionStrategy.completeValue(executionContext, fieldType, [field], result)
 
         then:
-        executionResult.data == ["test"]
+        resultPromise.thenAccept({executionResult -> executionResult.data == ["test"]})
     }
 
 }

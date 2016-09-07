@@ -5,20 +5,35 @@ import graphql.ExecutionResultImpl;
 import graphql.language.Field;
 import graphql.schema.GraphQLObjectType;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 public class SimpleExecutionStrategy extends ExecutionStrategy {
     @Override
-    public ExecutionResult execute(ExecutionContext executionContext, GraphQLObjectType parentType, Object source, Map<String, List<Field>> fields) {
+    public CompletableFuture<ExecutionResult> execute(ExecutionContext executionContext, GraphQLObjectType parentType, Object source, Map<String, List<Field>> fields) {
+        CompletableFuture<ExecutionResult> promise = new CompletableFuture<>();
+
+        List<CompletableFuture> fieldPromises = new ArrayList<>();
         Map<String, Object> results = new LinkedHashMap<String, Object>();
         for (String fieldName : fields.keySet()) {
             List<Field> fieldList = fields.get(fieldName);
-            ExecutionResult resolvedResult = resolveField(executionContext, parentType, source, fieldList);
+            fieldPromises.add(resolveField(executionContext, parentType, source, fieldList)
+                    .thenAccept(resolvedResult -> {
+                                results.put(fieldName, resolvedResult != null ? resolvedResult.getData() : null);
+                            })
+                    .exceptionally(e -> {
+                        promise.completeExceptionally(e);
+                        return null;
+                    }));
 
-            results.put(fieldName, resolvedResult != null ? resolvedResult.getData() : null);
         }
-        return new ExecutionResultImpl(results, executionContext.getErrors());
+
+        CompletableFuture[] fieldPromisesArray = new CompletableFuture[fieldPromises.size()];
+        CompletableFuture.allOf(fieldPromises.toArray(fieldPromisesArray))
+                .thenAccept(aVoid -> promise.complete(new ExecutionResultImpl(results, executionContext.getErrors())));
+        return promise;
     }
 }

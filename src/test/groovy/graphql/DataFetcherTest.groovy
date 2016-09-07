@@ -55,7 +55,7 @@ class DataFetcherTest extends Specification {
         given:
         def environment = new DataFetchingEnvironment(dataHolder, null, null, null, GraphQLString, null, null)
         when:
-        def result = new FieldDataFetcher("publicField").get(environment)
+        def result = new FieldDataFetcher("publicField").get(environment).get()
         then:
         result == "publicValue"
     }
@@ -64,7 +64,7 @@ class DataFetcherTest extends Specification {
         given:
         def environment = new DataFetchingEnvironment(dataHolder, null, null, null, GraphQLString, null, null)
         when:
-        def result = new PropertyDataFetcher("property").get(environment)
+        def result = new PropertyDataFetcher("property").get(environment).get()
         then:
         result == "propertyValue"
     }
@@ -73,7 +73,7 @@ class DataFetcherTest extends Specification {
         given:
         def environment = new DataFetchingEnvironment(dataHolder, null, null, null, GraphQLBoolean, null, null)
         when:
-        def result = new PropertyDataFetcher("booleanField").get(environment)
+        def result = new PropertyDataFetcher("booleanField").get(environment).get()
         then:
         result == true
     }
@@ -82,7 +82,7 @@ class DataFetcherTest extends Specification {
         given:
         def environment = new DataFetchingEnvironment(dataHolder, null, null, null, GraphQLBoolean, null, null)
         when:
-        def result = new PropertyDataFetcher("booleanFieldWithGet").get(environment)
+        def result = new PropertyDataFetcher("booleanFieldWithGet").get(environment).get()
         then:
         result == false
     }
@@ -91,7 +91,7 @@ class DataFetcherTest extends Specification {
         given:
         def environment = new DataFetchingEnvironment(dataHolder, null, null, null, GraphQLString, null, null)
         when:
-        def result = new PropertyDataFetcher("publicField").get(environment)
+        def result = new PropertyDataFetcher("publicField").get(environment).get()
         then:
         result == "publicValue"
     }

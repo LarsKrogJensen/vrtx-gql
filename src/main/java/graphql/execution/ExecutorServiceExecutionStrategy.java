@@ -9,10 +9,7 @@ import graphql.schema.GraphQLObjectType;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
 /**
  * <p>ExecutorServiceExecutionStrategy uses an {@link ExecutorService} to parallelize the resolve.</p>
@@ -37,30 +34,31 @@ public class ExecutorServiceExecutionStrategy extends ExecutionStrategy {
     }
 
     @Override
-    public ExecutionResult execute(final ExecutionContext executionContext, final GraphQLObjectType parentType, final Object source, final Map<String, List<Field>> fields) {
+    public CompletableFuture<ExecutionResult> execute(final ExecutionContext executionContext, final GraphQLObjectType parentType, final Object source, final Map<String, List<Field>> fields) {
         if (executorService == null)
             return new SimpleExecutionStrategy().execute(executionContext, parentType, source, fields);
 
-        Map<String, Future<ExecutionResult>> futures = new LinkedHashMap<String, Future<ExecutionResult>>();
+        Map<String, Future<CompletableFuture<ExecutionResult>>> futures = new LinkedHashMap<>();
         for (String fieldName : fields.keySet()) {
             final List<Field> fieldList = fields.get(fieldName);
-            Callable<ExecutionResult> resolveField = new Callable<ExecutionResult>() {
-                @Override
-                public ExecutionResult call() throws Exception {
-                    return resolveField(executionContext, parentType, source, fieldList);
-
-                }
-            };
+            Callable<CompletableFuture<ExecutionResult>> resolveField =
+                    () -> resolveField(executionContext, parentType, source, fieldList);
             futures.put(fieldName, executorService.submit(resolveField));
         }
         try {
+            CompletableFuture<ExecutionResult> promise = new CompletableFuture<>();
+
             Map<String, Object> results = new LinkedHashMap<String, Object>();
             for (String fieldName : futures.keySet()) {
-                ExecutionResult executionResult = futures.get(fieldName).get();
-
-                results.put(fieldName, executionResult != null ? executionResult.getData() : null);
+                futures.get(fieldName).get().thenAccept(executionResult -> {
+                    results.put(fieldName, executionResult != null ? executionResult.getData() : null);
+                    // Last one to finish completes the promise
+                    if (results.size() == futures.keySet().size()) {
+                        promise.complete(new ExecutionResultImpl(results, executionContext.getErrors()));
+                    }
+                });
             }
-            return new ExecutionResultImpl(results, executionContext.getErrors());
+            return promise;
         } catch (InterruptedException e) {
             throw new GraphQLException(e);
         } catch (ExecutionException e) {

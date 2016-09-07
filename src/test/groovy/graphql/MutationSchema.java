@@ -6,6 +6,8 @@ import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
 
+import java.util.concurrent.CompletableFuture;
+
 import static graphql.Scalars.GraphQLInt;
 import static graphql.schema.GraphQLArgument.newArgument;
 import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
@@ -75,10 +77,10 @@ public class MutationSchema {
                             .type(GraphQLInt))
                     .dataFetcher(new DataFetcher() {
                         @Override
-                        public Object get(DataFetchingEnvironment environment) {
+                        public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
                             Integer newNumber = environment.getArgument("newNumber");
                             Root root = (Root) environment.getSource();
-                            return root.changeNumber(newNumber);
+                            return CompletableFuture.completedFuture(root.changeNumber(newNumber));
                         }
                     }))
             .field(newFieldDefinition()
@@ -89,10 +91,16 @@ public class MutationSchema {
                             .type(GraphQLInt))
                     .dataFetcher(new DataFetcher() {
                         @Override
-                        public Object get(DataFetchingEnvironment environment) {
+                        public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
                             Integer newNumber = environment.getArgument("newNumber");
                             Root root = (Root) environment.getSource();
-                            return root.failToChangeTheNumber(newNumber);
+                            CompletableFuture<Object> promise = new CompletableFuture<>();
+                            try {
+                                promise.complete(root.failToChangeTheNumber(newNumber));
+                            } catch (Exception e) {
+                                promise.completeExceptionally(e);
+                            }
+                            return promise;
                         }
                     }))
             .build();

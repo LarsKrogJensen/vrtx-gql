@@ -5,6 +5,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Field;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import static graphql.Scalars.GraphQLBoolean;
 
@@ -17,13 +18,16 @@ public class PropertyDataFetcher implements DataFetcher {
     }
 
     @Override
-    public Object get(DataFetchingEnvironment environment) {
+    public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+        CompletableFuture<Object> promise = new CompletableFuture<>();
         Object source = environment.getSource();
         if (source == null) return null;
         if (source instanceof Map) {
-            return ((Map<?, ?>) source).get(propertyName);
+            promise.complete(((Map<?, ?>) source).get(propertyName));
+            return promise;
         }
-        return getPropertyViaGetter(source, environment.getFieldType());
+        promise.complete(getPropertyViaGetter(source, environment.getFieldType()));
+        return promise;
     }
 
     private Object getPropertyViaGetter(Object object, GraphQLOutputType outputType) {

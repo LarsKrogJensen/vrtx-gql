@@ -1,19 +1,12 @@
 package graphql.execution.batched;
 
 import graphql.Scalars;
-import graphql.schema.DataFetcher;
-import graphql.schema.DataFetchingEnvironment;
-import graphql.schema.GraphQLArgument;
-import graphql.schema.GraphQLEnumType;
-import graphql.schema.GraphQLFieldDefinition;
-import graphql.schema.GraphQLList;
-import graphql.schema.GraphQLNonNull;
-import graphql.schema.GraphQLObjectType;
-import graphql.schema.GraphQLSchema;
-import graphql.schema.GraphQLTypeReference;
+import graphql.schema.*;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class FunWithStringsSchemaFactory {
@@ -38,13 +31,13 @@ public class FunWithStringsSchemaFactory {
             @Override
             @Batched
             @SuppressWarnings("unchecked")
-            public Object get(DataFetchingEnvironment environment) {
+            public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
                 increment(callCounts, CallType.VALUE);
                 List<String> retVal = new ArrayList<String>();
                 for (String s: (List<String>) environment.getSource()) {
                     retVal.add("null".equals(s) ? null : s);
                 }
-                return retVal;
+                return CompletableFuture.completedFuture(retVal);
             }
         });
 
@@ -52,13 +45,13 @@ public class FunWithStringsSchemaFactory {
             @Override
             @Batched
             @SuppressWarnings("unchecked")
-            public Object get(DataFetchingEnvironment environment) {
+            public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
                 increment(callCounts, CallType.APPEND);
                 List<String> retVal = new ArrayList<String>();
                 for (String s: (List<String>) environment.getSource()) {
                     retVal.add(s + environment.getArgument("text"));
                 }
-                return retVal;
+                return CompletableFuture.completedFuture(retVal);
             }
         });
 
@@ -66,7 +59,7 @@ public class FunWithStringsSchemaFactory {
             @Batched
             @Override
             @SuppressWarnings("unchecked")
-            public Object get(DataFetchingEnvironment environment) {
+            public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
                 increment(callCounts, CallType.WORDS_AND_LETTERS);
                 List<String> sources = (List<String>) environment.getSource();
                 List<List<List<String>>> retVal = new ArrayList<List<List<String>>>();
@@ -81,7 +74,7 @@ public class FunWithStringsSchemaFactory {
                     }
                     retVal.add(sentence);
                 }
-                return retVal;
+                return CompletableFuture.completedFuture(retVal);
             }
         });
 
@@ -89,7 +82,7 @@ public class FunWithStringsSchemaFactory {
             @Batched
             @Override
             @SuppressWarnings("unchecked")
-            public Object get(DataFetchingEnvironment environment) {
+            public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
                 increment(callCounts, CallType.SPLIT);
                 String regex = environment.getArgument("regex");
                 List<String> sources = (List<String>) environment.getSource();
@@ -98,7 +91,7 @@ public class FunWithStringsSchemaFactory {
                     for (String source: sources) {
                         retVal.add(null);
                     }
-                    return retVal;
+                    return CompletableFuture.completedFuture(retVal);
                 }
                 for (String source: sources) {
                     List<String> retItem = new ArrayList<String>();
@@ -111,7 +104,7 @@ public class FunWithStringsSchemaFactory {
                     }
                     retVal.add(retItem);
                 }
-                return retVal;
+                return CompletableFuture.completedFuture(retVal);
             }
         });
 
@@ -119,7 +112,7 @@ public class FunWithStringsSchemaFactory {
             @Batched
             @Override
             @SuppressWarnings("unchecked")
-            public Object get(DataFetchingEnvironment environment) {
+            public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
                 increment(callCounts, CallType.SHATTER);
                 List<String> sources = (List<String>) environment.getSource();
                 List<List<String>> retVal = new ArrayList<List<String>>();
@@ -130,7 +123,7 @@ public class FunWithStringsSchemaFactory {
                     }
                     retVal.add(retItem);
                 }
-                return retVal;
+                return CompletableFuture.completedFuture(retVal);
             }
         });
 
@@ -141,14 +134,14 @@ public class FunWithStringsSchemaFactory {
 
     private DataFetcher stringObjectValueFetcher = new DataFetcher() {
         @Override
-        public Object get(DataFetchingEnvironment e) {
-            return "null".equals(e.getSource()) ? null : e.getSource();
+        public CompletableFuture<Object> get(DataFetchingEnvironment e) {
+            return CompletableFuture.completedFuture("null".equals(e.getSource()) ? null : e.getSource());
         }
     };
 
     private DataFetcher shatterFetcher = new DataFetcher() {
         @Override
-        public Object get(DataFetchingEnvironment e) {
+        public CompletableFuture<Object> get(DataFetchingEnvironment e) {
             String source = (String) e.getSource();
             if(source.isEmpty()) {
                 return null; // trigger error
@@ -157,13 +150,13 @@ public class FunWithStringsSchemaFactory {
             for (char c: source.toCharArray()) {
                 retVal.add(Character.toString(c));
             }
-            return retVal;
+            return CompletableFuture.completedFuture(retVal);
         }
     };
 
     public DataFetcher wordsAndLettersFetcher = new DataFetcher() {
         @Override
-        public Object get(DataFetchingEnvironment e) {
+        public CompletableFuture<Object> get(DataFetchingEnvironment e) {
             String source = (String) e.getSource();
             List<List<String>> retVal = new ArrayList<List<String>>();
             for (String word: source.split(" ")) {
@@ -173,13 +166,13 @@ public class FunWithStringsSchemaFactory {
                 }
                 retVal.add(retItem);
             }
-            return retVal;
+            return CompletableFuture.completedFuture(retVal);
         }
     };
 
     public DataFetcher splitFetcher = new DataFetcher() {
         @Override
-        public Object get(DataFetchingEnvironment e) {
+        public CompletableFuture<Object> get(DataFetchingEnvironment e) {
             String regex = e.getArgument("regex");
             if (regex == null ) {
                 return null;
@@ -193,14 +186,14 @@ public class FunWithStringsSchemaFactory {
                     retVal.add(str);
                 }
             }
-            return retVal;
+            return CompletableFuture.completedFuture(retVal);
         }
     };
 
     public DataFetcher appendFetcher = new DataFetcher() {
         @Override
-        public Object get(DataFetchingEnvironment e) {
-            return ((String)e.getSource()) + e.getArgument("text");
+        public CompletableFuture<Object> get(DataFetchingEnvironment e) {
+            return CompletableFuture.completedFuture(((String)e.getSource()) + e.getArgument("text"));
         }
     };
 
@@ -298,7 +291,11 @@ public class FunWithStringsSchemaFactory {
                                 .type(Scalars.GraphQLString))
                         .dataFetcher(new DataFetcher() {
                             @Override
-                            public Object get(DataFetchingEnvironment env) {return env.getArgument("value");}
+                            public CompletableFuture<Object> get(DataFetchingEnvironment env) {
+                                CompletableFuture<Object> promise = new CompletableFuture<>();
+                                promise.complete(env.getArgument("value"));
+                                return promise;
+                            }
                         }))
                 .name("EnumQuery")
                 .field(GraphQLFieldDefinition.newFieldDefinition()
@@ -306,7 +303,9 @@ public class FunWithStringsSchemaFactory {
                         .type(enumDayType)
                         .dataFetcher(new DataFetcher() {
                            @Override
-                           public Object get(DataFetchingEnvironment env) {return null;}
+                           public CompletableFuture<Object> get(DataFetchingEnvironment env) {
+                               return CompletableFuture.completedFuture(null);
+                           }
                         }))
                 .build();
         return GraphQLSchema.newSchema()

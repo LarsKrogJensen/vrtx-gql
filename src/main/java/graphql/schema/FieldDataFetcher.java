@@ -3,6 +3,7 @@ package graphql.schema;
 
 import java.lang.reflect.Field;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Fetches data directly from a field.
@@ -24,13 +25,17 @@ public class FieldDataFetcher implements DataFetcher {
     }
 
     @Override
-    public Object get(DataFetchingEnvironment environment) {
+    public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+        CompletableFuture<Object> promise = new CompletableFuture<>();
+
         Object source = environment.getSource();
         if (source == null) return null;
         if (source instanceof Map) {
-            return ((Map<?, ?>) source).get(fieldName);
+            promise.complete(((Map<?, ?>) source).get(fieldName));
+            return promise;
         }
-        return getFieldValue(source, environment.getFieldType());
+        promise.complete(getFieldValue(source, environment.getFieldType()));
+        return promise;
     }
 
     /**

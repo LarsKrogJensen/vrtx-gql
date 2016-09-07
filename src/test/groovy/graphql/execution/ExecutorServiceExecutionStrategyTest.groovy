@@ -63,7 +63,7 @@ class ExecutorServiceExecutionStrategyTest extends Specification {
                  */
                 new ThreadPoolExecutor.CallerRunsPolicy());
 
-        def result = new GraphQL(StarWarsSchema.starWarsSchema, new ExecutorServiceExecutionStrategy(threadPoolExecutor)).execute(query).data
+        def result = new GraphQL(StarWarsSchema.starWarsSchema, new ExecutorServiceExecutionStrategy(threadPoolExecutor)).execute(query).get().data
 
         then:
         result == expected

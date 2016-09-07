@@ -5,6 +5,7 @@ import graphql.schema.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import static graphql.Scalars.GraphQLBoolean;
 import static graphql.Scalars.GraphQLString;
@@ -40,24 +41,33 @@ public class Introspection {
 
     public static DataFetcher kindDataFetcher = new DataFetcher() {
         @Override
-        public Object get(DataFetchingEnvironment environment) {
+        public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+            CompletableFuture<Object> promise = new CompletableFuture<>();
             Object type = environment.getSource();
             if (type instanceof GraphQLScalarType) {
-                return TypeKind.SCALAR;
+                promise.complete(TypeKind.SCALAR);
+                return promise;
             } else if (type instanceof GraphQLObjectType) {
-                return TypeKind.OBJECT;
+                promise.complete(TypeKind.OBJECT);
+                return promise;
             } else if (type instanceof GraphQLInterfaceType) {
-                return TypeKind.INTERFACE;
+                promise.complete(TypeKind.INTERFACE);
+                return promise;
             } else if (type instanceof GraphQLUnionType) {
-                return TypeKind.UNION;
+                promise.complete(TypeKind.UNION);
+                return promise;
             } else if (type instanceof GraphQLEnumType) {
-                return TypeKind.ENUM;
+                promise.complete(TypeKind.ENUM);
+                return promise;
             } else if (type instanceof GraphQLInputObjectType) {
-                return TypeKind.INPUT_OBJECT;
+                promise.complete(TypeKind.INPUT_OBJECT);
+                return promise;
             } else if (type instanceof GraphQLList) {
-                return TypeKind.LIST;
+                promise.complete(TypeKind.LIST);
+                return promise;
             } else if (type instanceof GraphQLNonNull) {
-                return TypeKind.NON_NULL;
+                promise.complete(TypeKind.NON_NULL);
+                return promise;
             } else {
                 throw new RuntimeException("Unknown kind of type: " + type);
             }
@@ -80,15 +90,19 @@ public class Introspection {
                     .type(GraphQLString)
                     .dataFetcher(new DataFetcher() {
                         @Override
-                        public Object get(DataFetchingEnvironment environment) {
+                        public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+                            CompletableFuture<Object> promise = new CompletableFuture<>();
                             if (environment.getSource() instanceof GraphQLArgument) {
                                 GraphQLArgument inputField = (GraphQLArgument) environment.getSource();
-                                return inputField.getDefaultValue() != null ? inputField.getDefaultValue().toString() : null;
+                                promise.complete(inputField.getDefaultValue() != null ? inputField.getDefaultValue().toString() : null);
                             } else if (environment.getSource() instanceof GraphQLInputObjectField) {
                                 GraphQLInputObjectField inputField = (GraphQLInputObjectField) environment.getSource();
-                                return inputField.getDefaultValue() != null ? inputField.getDefaultValue().toString() : null;
+                                promise.complete(inputField.getDefaultValue() != null ? inputField.getDefaultValue().toString() : null);
+                            } else {
+                                promise.complete(null);
                             }
-                            return null;
+
+                            return promise;
                         }
                     }))
             .build();
@@ -107,9 +121,11 @@ public class Introspection {
                     .type(new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(__InputValue))))
                     .dataFetcher(new DataFetcher() {
                         @Override
-                        public Object get(DataFetchingEnvironment environment) {
+                        public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+                            CompletableFuture<Object> promise = new CompletableFuture<>();
                             Object type = environment.getSource();
-                            return ((GraphQLFieldDefinition) type).getArguments();
+                            promise.complete(((GraphQLFieldDefinition) type).getArguments());
+                            return promise;
                         }
                     }))
             .field(newFieldDefinition()
@@ -120,9 +136,11 @@ public class Introspection {
                     .type(new GraphQLNonNull(GraphQLBoolean))
                     .dataFetcher(new DataFetcher() {
                         @Override
-                        public Object get(DataFetchingEnvironment environment) {
+                        public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+                            CompletableFuture<Object> promise = new CompletableFuture<>();
                             Object type = environment.getSource();
-                            return ((GraphQLFieldDefinition) type).isDeprecated();
+                            promise.complete(((GraphQLFieldDefinition) type).isDeprecated());
+                            return promise;
                         }
                     }))
             .field(newFieldDefinition()
@@ -144,9 +162,11 @@ public class Introspection {
                     .type(new GraphQLNonNull(GraphQLBoolean))
                     .dataFetcher(new DataFetcher() {
                         @Override
-                        public Object get(DataFetchingEnvironment environment) {
+                        public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+                            CompletableFuture<Object> promise = new CompletableFuture<>();
                             GraphQLEnumValueDefinition enumValue = (GraphQLEnumValueDefinition) environment.getSource();
-                            return enumValue.isDeprecated();
+                            promise.complete(enumValue.isDeprecated());
+                            return promise;
                         }
                     }))
             .field(newFieldDefinition()
@@ -156,88 +176,114 @@ public class Introspection {
 
     public static DataFetcher fieldsFetcher = new DataFetcher() {
         @Override
-        public Object get(DataFetchingEnvironment environment) {
+        public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+            CompletableFuture<Object> promise = new CompletableFuture<>();
             Object type = environment.getSource();
             Boolean includeDeprecated = environment.getArgument("includeDeprecated");
             if (type instanceof GraphQLFieldsContainer) {
                 GraphQLFieldsContainer fieldsContainer = (GraphQLFieldsContainer) type;
                 List<GraphQLFieldDefinition> fieldDefinitions = fieldsContainer.getFieldDefinitions();
-                if (includeDeprecated) return fieldDefinitions;
+                if (includeDeprecated) {
+                    promise.complete(fieldDefinitions);
+                    return promise;
+                }
                 List<GraphQLFieldDefinition> filtered = new ArrayList<GraphQLFieldDefinition>(fieldDefinitions);
                 for (GraphQLFieldDefinition fieldDefinition : fieldDefinitions) {
                     if (fieldDefinition.isDeprecated()) filtered.remove(fieldDefinition);
                 }
-                return filtered;
+                promise.complete(filtered);
+                return promise;
             }
-            return null;
+            promise.complete(null);
+            return promise;
         }
     };
 
     public static DataFetcher interfacesFetcher = new DataFetcher() {
         @Override
-        public Object get(DataFetchingEnvironment environment) {
+        public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+            CompletableFuture<Object> promise = new CompletableFuture<>();
             Object type = environment.getSource();
             if (type instanceof GraphQLObjectType) {
-                return ((GraphQLObjectType) type).getInterfaces();
+                promise.complete(((GraphQLObjectType) type).getInterfaces());
+                return promise;
             }
-            return null;
+            promise.complete(null);
+            return promise;
         }
     };
 
     public static DataFetcher possibleTypesFetcher = new DataFetcher() {
         @Override
-        public Object get(DataFetchingEnvironment environment) {
+        public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+            CompletableFuture<Object> promise = new CompletableFuture<>();
             Object type = environment.getSource();
             if (type instanceof GraphQLInterfaceType) {
-                return new SchemaUtil().findImplementations(environment.getGraphQLSchema(), (GraphQLInterfaceType) type);
+                promise.complete(new SchemaUtil().findImplementations(environment.getGraphQLSchema(), (GraphQLInterfaceType) type));
+                return promise;
             }
             if (type instanceof GraphQLUnionType) {
-                return ((GraphQLUnionType) type).getTypes();
+                promise.complete(((GraphQLUnionType) type).getTypes());
+                return promise;
             }
-            return null;
+            promise.complete(null);
+            return promise;
         }
     };
 
     public static DataFetcher enumValuesTypesFetcher = new DataFetcher() {
         @Override
-        public Object get(DataFetchingEnvironment environment) {
+        public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+            CompletableFuture<Object> promise = new CompletableFuture<>();
             Object type = environment.getSource();
             Boolean includeDeprecated = environment.getArgument("includeDeprecated");
             if (type instanceof GraphQLEnumType) {
                 List<GraphQLEnumValueDefinition> values = ((GraphQLEnumType) type).getValues();
-                if (includeDeprecated) return values;
+                if (includeDeprecated) {
+                    promise.complete(values);
+                    return promise;
+                }
                 List<GraphQLEnumValueDefinition> filtered = new ArrayList<GraphQLEnumValueDefinition>(values);
                 for (GraphQLEnumValueDefinition valueDefinition : values) {
                     if (valueDefinition.isDeprecated()) filtered.remove(valueDefinition);
                 }
-                return filtered;
+                promise.complete(filtered);
+                return promise;
             }
-            return null;
+            promise.complete(null);
+            return promise;
         }
     };
 
     public static DataFetcher inputFieldsFetcher = new DataFetcher() {
         @Override
-        public Object get(DataFetchingEnvironment environment) {
+        public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+            CompletableFuture<Object> promise = new CompletableFuture<>();
             Object type = environment.getSource();
             if (type instanceof GraphQLInputObjectType) {
-                return ((GraphQLInputObjectType) type).getFields();
+                promise.complete(((GraphQLInputObjectType) type).getFields());
+                return promise;
             }
-            return null;
+            promise.complete(null);
+            return promise;
         }
     };
 
     public static DataFetcher OfTypeFetcher = new DataFetcher() {
         @Override
-        public Object get(DataFetchingEnvironment environment) {
+        public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+            CompletableFuture<Object> promise = new CompletableFuture<>();
             Object type = environment.getSource();
             if (type instanceof GraphQLList) {
-                return ((GraphQLList) type).getWrappedType();
+                promise.complete(((GraphQLList) type).getWrappedType());
+                return promise;
             }
             if (type instanceof GraphQLNonNull) {
-                return ((GraphQLNonNull) type).getWrappedType();
+                promise.complete(((GraphQLNonNull) type).getWrappedType());
+                return promise;
             }
-            return null;
+            promise.complete(null);
+            return promise;
         }
     };
 
@@ -324,9 +370,11 @@ public class Introspection {
                     .type(new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(__InputValue))))
                     .dataFetcher(new DataFetcher() {
                         @Override
-                        public Object get(DataFetchingEnvironment environment) {
+                        public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+                            CompletableFuture<Object> promise = new CompletableFuture<>();
                             GraphQLDirective directive = (GraphQLDirective) environment.getSource();
-                            return directive.getArguments();
+                            promise.complete(directive.getArguments());
+                            return promise;
                         }
                     }))
             .field(newFieldDefinition()
@@ -354,9 +402,11 @@ public class Introspection {
                     .type(new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(__Type))))
                     .dataFetcher(new DataFetcher() {
                         @Override
-                        public Object get(DataFetchingEnvironment environment) {
+                        public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+                            CompletableFuture<Object> promise = new CompletableFuture<>();
                             GraphQLSchema schema = (GraphQLSchema) environment.getSource();
-                            return schema.getAllTypesAsList();
+                            promise.complete(schema.getAllTypesAsList());
+                            return promise;
                         }
                     }))
             .field(newFieldDefinition()
@@ -365,9 +415,11 @@ public class Introspection {
                     .type(new GraphQLNonNull(__Type))
                     .dataFetcher(new DataFetcher() {
                         @Override
-                        public Object get(DataFetchingEnvironment environment) {
+                        public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+                            CompletableFuture<Object> promise = new CompletableFuture<>();
                             GraphQLSchema schema = (GraphQLSchema) environment.getSource();
-                            return schema.getQueryType();
+                            promise.complete(schema.getQueryType());
+                            return promise;
                         }
                     }))
             .field(newFieldDefinition()
@@ -376,9 +428,11 @@ public class Introspection {
                     .type(__Type)
                     .dataFetcher(new DataFetcher() {
                         @Override
-                        public Object get(DataFetchingEnvironment environment) {
+                        public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+                            CompletableFuture<Object> promise = new CompletableFuture<>();
                             GraphQLSchema schema = (GraphQLSchema) environment.getSource();
-                            return schema.getMutationType();
+                            promise.complete(schema.getMutationType());
+                            return promise;
                         }
                     }))
             .field(newFieldDefinition()
@@ -387,8 +441,10 @@ public class Introspection {
                     .type(new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(__Directive))))
                     .dataFetcher(new DataFetcher() {
                         @Override
-                        public Object get(DataFetchingEnvironment environment) {
-                            return environment.getGraphQLSchema().getDirectives();
+                        public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+                            CompletableFuture<Object> promise = new CompletableFuture<>();
+                            promise.complete(environment.getGraphQLSchema().getDirectives());
+                            return promise;
                         }
                     }))
             .field(newFieldDefinition()
@@ -397,9 +453,11 @@ public class Introspection {
                     .type(__Type)
                     .dataFetcher(new DataFetcher() {
                         @Override
-                        public Object get(DataFetchingEnvironment environment) {
+                        public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+                            CompletableFuture<Object> promise = new CompletableFuture<>();
                             // Not yet supported
-                            return null;
+                            promise.complete(null);
+                            return promise;
                         }
                     }))
             .build();
@@ -411,8 +469,10 @@ public class Introspection {
             .description("Access the current type schema of this server.")
             .dataFetcher(new DataFetcher() {
                 @Override
-                public Object get(DataFetchingEnvironment environment) {
-                    return environment.getGraphQLSchema();
+                public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+                    CompletableFuture<Object> promise = new CompletableFuture<>();
+                    promise.complete(environment.getGraphQLSchema());
+                    return promise;
                 }
             }).build();
 
@@ -425,9 +485,11 @@ public class Introspection {
                     .type(new GraphQLNonNull(GraphQLString)))
             .dataFetcher(new DataFetcher() {
                 @Override
-                public Object get(DataFetchingEnvironment environment) {
+                public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+                    CompletableFuture<Object> promise = new CompletableFuture<>();
                     String name = environment.getArgument("name");
-                    return environment.getGraphQLSchema().getType(name);
+                    promise.complete(environment.getGraphQLSchema().getType(name));
+                    return promise;
                 }
             }).build();
 
@@ -437,8 +499,10 @@ public class Introspection {
             .description("The name of the current Object type at runtime.")
             .dataFetcher(new DataFetcher() {
                 @Override
-                public Object get(DataFetchingEnvironment environment) {
-                    return environment.getParentType().getName();
+                public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+                    CompletableFuture<Object> promise = new CompletableFuture<>();
+                    promise.complete(environment.getParentType().getName());
+                    return promise;
                 }
             })
             .build();

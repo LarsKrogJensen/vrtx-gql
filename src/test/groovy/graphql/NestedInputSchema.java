@@ -9,6 +9,8 @@ import graphql.schema.GraphQLInputObjectType;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+
 import static graphql.Scalars.GraphQLBoolean;
 import static graphql.Scalars.GraphQLInt;
 
@@ -34,27 +36,27 @@ public class NestedInputSchema {
                         .type(GraphQLInt)
                         .dataFetcher(new DataFetcher() {
                             @Override
-                            public Object get(DataFetchingEnvironment environment) {
+                            public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
                                 Integer initialValue = environment.getArgument("initialValue");
                                 Map<String, Object> filter = environment.getArgument("filter");
                                 if (filter != null) {
                                     if (filter.containsKey("even")) {
                                         Boolean even = (Boolean) filter.get("even");
                                         if (even && (initialValue%2 != 0)) {
-                                            return 0;
+                                            return CompletableFuture.completedFuture(0);
                                         } else if (!even && (initialValue%2 == 0)) {
-                                            return 0;
+                                            return CompletableFuture.completedFuture(0);
                                         }
                                     }
                                     if (filter.containsKey("range")) {
                                         Map<String, Integer> range = (Map<String, Integer>) filter.get("range");
                                         if (initialValue < range.get("lowerBound") ||
                                                 initialValue > range.get("upperBound")) {
-                                            return 0;
+                                            return CompletableFuture.completedFuture(0);
                                         }
                                     }
                                 }
-                                return initialValue;
+                                return CompletableFuture.completedFuture(initialValue);
                             }})
                         .argument(GraphQLArgument.newArgument()
                                 .name("intialValue")

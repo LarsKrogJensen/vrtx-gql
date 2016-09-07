@@ -4,6 +4,7 @@ package graphql.schema;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import static graphql.Assert.assertNotNull;
 
@@ -121,8 +122,10 @@ public class GraphQLFieldDefinition {
         public Builder staticValue(final Object value) {
             this.dataFetcher = new DataFetcher() {
                 @Override
-                public Object get(DataFetchingEnvironment environment) {
-                    return value;
+                public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+                    CompletableFuture<Object> promise = new CompletableFuture<>();
+                    promise.complete(value);
+                    return promise;
                 }
             };
             return this;
