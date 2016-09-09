@@ -357,7 +357,7 @@ It's recommended to use a `ExecutorService` to speed up execution.
 Alternatively, schemas with nested lists may benefit from using a BatchedExecutionStrategy and creating batched DataFetchers with get() methods annotated @Batched.
 
 #### JDK8 Lambdas
-This project is built using JDK6. But if you're using JDK8 and above then you can also use lambdas.
+This project is built using JDK8, so you can use lambdas.
 ```java
 GraphQLObjectType queryType = newObject()
                 .name("helloWorldQuery")
