@@ -54,6 +54,8 @@ This is a Java Implementation of GraphQL. The library aims for real-life usage i
 It takes care of parsing and executing a GraphQL query. It doesn't take care of actually fetching any data:
 Data comes from implementing callbacks or providing static data.
 
+Execution returns promises in the form of [CompletableFutures](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html).
+
 ### Code of Conduct
 
 Please note that this project is released with a [Contributor Code of Conduct](CODE_OF_CONDUCT.md).
@@ -94,9 +96,9 @@ public class HelloWorld {
         GraphQLSchema schema = GraphQLSchema.newSchema()
                         .query(queryType)
                         .build();
-        Map<String, Object> result = new GraphQL(schema).execute("{hello}").getData();
+        Map<String, Object> result = new GraphQL(schema).execute("{hello}")
+            .thenAccept(result -> System.out.println(result));
         
-        System.out.println(result);
         // Prints: {hello=world}
     }
 }
@@ -307,11 +309,17 @@ Example of configuring a custom `DataFetcher`:
 
 DataFetcher calculateComplicatedValue = new DataFetcher() {
     @Override
-    Object get(DataFetchingEnvironment environment) {
+    CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+        // Create a new promise
+        CompletableFuture<Object> promise = new CompletableFuture<>();
+        
         // environment.getSource() is the value of the surrounding
         // object. In this case described by objectType
-        Object value = ... // Perhaps getting from a DB or whatever 
-        return value;
+        Object value = ... // Perhaps getting from a DB or whatever
+        
+        // Call promise.complete() when your result is ready
+        promise.complete(value);
+        return promise;
     }
 
 GraphQLObjectType objectType = newObject()
@@ -328,7 +336,7 @@ GraphQLObjectType objectType = newObject()
 
 To execute a Query/Mutation against a Schema instantiate a new `GraphQL` Object with the appropriate arguments and then call `execute()`.
  
-The result of a Query is a `ExecutionResult` Object with the result and/or a list of Errors.
+The result of a Query is a CompletableFuture promise of type `ExecutionResult` Object with the result and/or a list of Errors.
 
 Example: [GraphQL Test](src/test/groovy/graphql/GraphQLTest.groovy)
 
@@ -383,7 +391,7 @@ from the [todomvc-relay-java](https://github.com/andimarek/todomvc-relay-java) e
 public Object executeOperation(@RequestBody Map body) {
     String query = (String) body.get("query");
     Map<String, Object> variables = (Map<String, Object>) body.get("variables");
-    ExecutionResult executionResult = graphql.execute(query, (Object) null, variables);
+    ExecutionResult executionResult = graphql.execute(query, (Object) null, variables).get();
     Map<String, Object> result = new LinkedHashMap<>();
     if (executionResult.getErrors().size() > 0) {
         result.put("errors", executionResult.getErrors());
