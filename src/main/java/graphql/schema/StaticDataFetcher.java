@@ -2,6 +2,7 @@ package graphql.schema;
 
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 public class StaticDataFetcher implements DataFetcher {
 
@@ -13,9 +14,7 @@ public class StaticDataFetcher implements DataFetcher {
     }
 
     @Override
-    public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
-        CompletableFuture<Object> promise = new CompletableFuture<>();
-        promise.complete(value);
-        return promise;
+    public CompletionStage<Object> get(DataFetchingEnvironment environment) {
+        return CompletableFuture.completedFuture(value);
     }
 }

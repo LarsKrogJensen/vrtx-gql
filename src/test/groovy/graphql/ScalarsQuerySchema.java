@@ -10,12 +10,13 @@ import static graphql.schema.GraphQLObjectType.newObject;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 public class ScalarsQuerySchema {
 
     public static final DataFetcher inputDF = new DataFetcher() {
         @Override
-        public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+        public CompletionStage<Object> get(DataFetchingEnvironment environment) {
             return CompletableFuture.completedFuture(environment.getArgument("input"));
         }
     };

@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 public class Execution {
 
@@ -28,7 +28,7 @@ public class Execution {
         }
     }
 
-    public CompletableFuture<ExecutionResult> execute(GraphQLSchema graphQLSchema, Object root, Document document, String operationName, Map<String, Object> args) {
+    public CompletionStage<ExecutionResult> execute(GraphQLSchema graphQLSchema, Object root, Document document, String operationName, Map<String, Object> args) {
         ExecutionContextBuilder executionContextBuilder = new ExecutionContextBuilder(new ValuesResolver());
         ExecutionContext executionContext = executionContextBuilder.build(graphQLSchema, strategy, root, document, operationName, args);
         return executeOperation(executionContext, root, executionContext.getOperationDefinition());
@@ -46,7 +46,7 @@ public class Execution {
         }
     }
 
-    private CompletableFuture<ExecutionResult> executeOperation(
+    private CompletionStage<ExecutionResult> executeOperation(
             ExecutionContext executionContext,
             Object root,
             OperationDefinition operationDefinition) {

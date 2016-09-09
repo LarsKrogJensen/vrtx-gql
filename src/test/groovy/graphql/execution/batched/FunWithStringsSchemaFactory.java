@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class FunWithStringsSchemaFactory {
@@ -31,7 +32,7 @@ public class FunWithStringsSchemaFactory {
             @Override
             @Batched
             @SuppressWarnings("unchecked")
-            public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+            public CompletionStage<Object> get(DataFetchingEnvironment environment) {
                 increment(callCounts, CallType.VALUE);
                 List<String> retVal = new ArrayList<String>();
                 for (String s: (List<String>) environment.getSource()) {
@@ -45,7 +46,7 @@ public class FunWithStringsSchemaFactory {
             @Override
             @Batched
             @SuppressWarnings("unchecked")
-            public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+            public CompletionStage<Object> get(DataFetchingEnvironment environment) {
                 increment(callCounts, CallType.APPEND);
                 List<String> retVal = new ArrayList<String>();
                 for (String s: (List<String>) environment.getSource()) {
@@ -59,7 +60,7 @@ public class FunWithStringsSchemaFactory {
             @Batched
             @Override
             @SuppressWarnings("unchecked")
-            public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+            public CompletionStage<Object> get(DataFetchingEnvironment environment) {
                 increment(callCounts, CallType.WORDS_AND_LETTERS);
                 List<String> sources = (List<String>) environment.getSource();
                 List<List<List<String>>> retVal = new ArrayList<List<List<String>>>();
@@ -82,7 +83,7 @@ public class FunWithStringsSchemaFactory {
             @Batched
             @Override
             @SuppressWarnings("unchecked")
-            public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+            public CompletionStage<Object> get(DataFetchingEnvironment environment) {
                 increment(callCounts, CallType.SPLIT);
                 String regex = environment.getArgument("regex");
                 List<String> sources = (List<String>) environment.getSource();
@@ -112,7 +113,7 @@ public class FunWithStringsSchemaFactory {
             @Batched
             @Override
             @SuppressWarnings("unchecked")
-            public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+            public CompletionStage<Object> get(DataFetchingEnvironment environment) {
                 increment(callCounts, CallType.SHATTER);
                 List<String> sources = (List<String>) environment.getSource();
                 List<List<String>> retVal = new ArrayList<List<String>>();
@@ -134,14 +135,14 @@ public class FunWithStringsSchemaFactory {
 
     private DataFetcher stringObjectValueFetcher = new DataFetcher() {
         @Override
-        public CompletableFuture<Object> get(DataFetchingEnvironment e) {
+        public CompletionStage<Object> get(DataFetchingEnvironment e) {
             return CompletableFuture.completedFuture("null".equals(e.getSource()) ? null : e.getSource());
         }
     };
 
     private DataFetcher shatterFetcher = new DataFetcher() {
         @Override
-        public CompletableFuture<Object> get(DataFetchingEnvironment e) {
+        public CompletionStage<Object> get(DataFetchingEnvironment e) {
             String source = (String) e.getSource();
             if(source.isEmpty()) {
                 return null; // trigger error
@@ -156,7 +157,7 @@ public class FunWithStringsSchemaFactory {
 
     public DataFetcher wordsAndLettersFetcher = new DataFetcher() {
         @Override
-        public CompletableFuture<Object> get(DataFetchingEnvironment e) {
+        public CompletionStage<Object> get(DataFetchingEnvironment e) {
             String source = (String) e.getSource();
             List<List<String>> retVal = new ArrayList<List<String>>();
             for (String word: source.split(" ")) {
@@ -172,7 +173,7 @@ public class FunWithStringsSchemaFactory {
 
     public DataFetcher splitFetcher = new DataFetcher() {
         @Override
-        public CompletableFuture<Object> get(DataFetchingEnvironment e) {
+        public CompletionStage<Object> get(DataFetchingEnvironment e) {
             String regex = e.getArgument("regex");
             if (regex == null ) {
                 return null;
@@ -192,7 +193,7 @@ public class FunWithStringsSchemaFactory {
 
     public DataFetcher appendFetcher = new DataFetcher() {
         @Override
-        public CompletableFuture<Object> get(DataFetchingEnvironment e) {
+        public CompletionStage<Object> get(DataFetchingEnvironment e) {
             return CompletableFuture.completedFuture(((String)e.getSource()) + e.getArgument("text"));
         }
     };
@@ -291,7 +292,7 @@ public class FunWithStringsSchemaFactory {
                                 .type(Scalars.GraphQLString))
                         .dataFetcher(new DataFetcher() {
                             @Override
-                            public CompletableFuture<Object> get(DataFetchingEnvironment env) {
+                            public CompletionStage<Object> get(DataFetchingEnvironment env) {
                                 CompletableFuture<Object> promise = new CompletableFuture<>();
                                 promise.complete(env.getArgument("value"));
                                 return promise;
@@ -303,7 +304,7 @@ public class FunWithStringsSchemaFactory {
                         .type(enumDayType)
                         .dataFetcher(new DataFetcher() {
                            @Override
-                           public CompletableFuture<Object> get(DataFetchingEnvironment env) {
+                           public CompletionStage<Object> get(DataFetchingEnvironment env) {
                                return CompletableFuture.completedFuture(null);
                            }
                         }))

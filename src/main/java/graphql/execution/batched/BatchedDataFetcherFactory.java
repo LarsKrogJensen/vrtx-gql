@@ -4,7 +4,7 @@ import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 
 import java.lang.reflect.Method;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 /**
  * Produces a BatchedDataFetcher for a given DataFetcher.
@@ -26,7 +26,7 @@ public class BatchedDataFetcherFactory {
             if (batched != null) {
                 return new BatchedDataFetcher() {
                     @Override
-                    public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+                    public CompletionStage<Object> get(DataFetchingEnvironment environment) {
                         return supplied.get(environment);
                     }
                 };

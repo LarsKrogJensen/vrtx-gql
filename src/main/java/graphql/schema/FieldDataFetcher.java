@@ -4,6 +4,7 @@ package graphql.schema;
 import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 /**
  * Fetches data directly from a field.
@@ -25,7 +26,7 @@ public class FieldDataFetcher implements DataFetcher {
     }
 
     @Override
-    public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+    public CompletionStage<Object> get(DataFetchingEnvironment environment) {
         CompletableFuture<Object> promise = new CompletableFuture<>();
 
         Object source = environment.getSource();

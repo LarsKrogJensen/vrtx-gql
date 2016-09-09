@@ -10,6 +10,7 @@ import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import static graphql.Scalars.GraphQLBoolean;
 import static graphql.Scalars.GraphQLInt;
@@ -36,7 +37,7 @@ public class NestedInputSchema {
                         .type(GraphQLInt)
                         .dataFetcher(new DataFetcher() {
                             @Override
-                            public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+                            public CompletionStage<Object> get(DataFetchingEnvironment environment) {
                                 Integer initialValue = environment.getArgument("initialValue");
                                 Map<String, Object> filter = environment.getArgument("filter");
                                 if (filter != null) {

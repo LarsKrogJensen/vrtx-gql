@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import static graphql.Assert.assertNotNull;
 
@@ -40,23 +41,23 @@ public class GraphQL {
         this.executionStrategy = executionStrategy;
     }
 
-    public CompletableFuture<ExecutionResult> execute(String requestString) {
+    public CompletionStage<ExecutionResult> execute(String requestString) {
         return execute(requestString, null);
     }
 
-    public CompletableFuture<ExecutionResult> execute(String requestString, Object context) {
+    public CompletionStage<ExecutionResult> execute(String requestString, Object context) {
         return execute(requestString, context, Collections.<String, Object>emptyMap());
     }
 
-    public CompletableFuture<ExecutionResult> execute(String requestString, String operationName, Object context) {
+    public CompletionStage<ExecutionResult> execute(String requestString, String operationName, Object context) {
         return execute(requestString, operationName, context, Collections.<String, Object>emptyMap());
     }
 
-    public CompletableFuture<ExecutionResult> execute(String requestString, Object context, Map<String, Object> arguments) {
+    public CompletionStage<ExecutionResult> execute(String requestString, Object context, Map<String, Object> arguments) {
         return execute(requestString, null, context, arguments);
     }
 
-    public CompletableFuture<ExecutionResult> execute(String requestString, String operationName, Object context, Map<String, Object> arguments) {
+    public CompletionStage<ExecutionResult> execute(String requestString, String operationName, Object context, Map<String, Object> arguments) {
         CompletableFuture<ExecutionResult> promise = new CompletableFuture<>();
 
         assertNotNull(arguments, "arguments can't be null");

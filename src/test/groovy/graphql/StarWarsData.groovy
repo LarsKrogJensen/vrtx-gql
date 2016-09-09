@@ -6,6 +6,7 @@ import graphql.schema.GraphQLObjectType
 import graphql.schema.TypeResolver
 
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionStage
 
 class StarWarsData {
 
@@ -85,7 +86,7 @@ class StarWarsData {
 
     static DataFetcher humanDataFetcher = new DataFetcher() {
         @Override
-        CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+        CompletionStage<Object> get(DataFetchingEnvironment environment) {
             def id = environment.arguments.id
             return CompletableFuture.completedFuture(humanData[id])
         }
@@ -94,7 +95,7 @@ class StarWarsData {
 
     static DataFetcher droidDataFetcher = new DataFetcher() {
         @Override
-        CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+        CompletionStage<Object> get(DataFetchingEnvironment environment) {
             def id = environment.arguments.id
             return CompletableFuture.completedFuture(droidData[id])
         }
@@ -114,7 +115,7 @@ class StarWarsData {
 
     static DataFetcher friendsDataFetcher = new DataFetcher() {
         @Override
-        CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+        CompletionStage<Object> get(DataFetchingEnvironment environment) {
             List<Object> result = []
             for (String id : environment.source.friends) {
                 result.add(getCharacter(id))
@@ -125,7 +126,7 @@ class StarWarsData {
 
     static DataFetcher heroDataFetcher = new DataFetcher() {
         @Override
-        public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+        public CompletionStage<Object> get(DataFetchingEnvironment environment) {
             if (environment.containsArgument("episode") && 5 == environment.getArgument("episode")) {
                 return CompletableFuture.completedFuture(luke)
             };

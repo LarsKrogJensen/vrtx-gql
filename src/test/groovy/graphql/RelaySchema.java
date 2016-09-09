@@ -5,6 +5,7 @@ import graphql.schema.*;
 
 import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import static graphql.Scalars.GraphQLString;
 import static graphql.schema.GraphQLArgument.newArgument;
@@ -51,10 +52,9 @@ public class RelaySchema {
             .name("RelayQuery")
             .field(relay.nodeField(NodeInterface, new DataFetcher() {
                 @Override
-                public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
-                    CompletableFuture<Object> promise = new CompletableFuture<>();
+                public CompletionStage<Object> get(DataFetchingEnvironment environment) {
                     //TODO: implement
-                    return null;
+                    return CompletableFuture.completedFuture(null);
                 }
             }))
             .field(newFieldDefinition()
@@ -66,10 +66,9 @@ public class RelaySchema {
                             .type(new GraphQLNonNull(GraphQLString)))
                     .dataFetcher(new DataFetcher() {
                         @Override
-                        public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
-                            CompletableFuture<Object> promise = new CompletableFuture<>();
+                        public CompletionStage<Object> get(DataFetchingEnvironment environment) {
                             //TODO: implement
-                            return null;
+                            return CompletableFuture.completedFuture(null);
                         }
                     }))
             .build();

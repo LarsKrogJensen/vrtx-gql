@@ -6,6 +6,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import static graphql.Scalars.GraphQLBoolean;
 
@@ -18,7 +19,7 @@ public class PropertyDataFetcher implements DataFetcher {
     }
 
     @Override
-    public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+    public CompletionStage<Object> get(DataFetchingEnvironment environment) {
         CompletableFuture<Object> promise = new CompletableFuture<>();
         Object source = environment.getSource();
         if (source == null) return null;

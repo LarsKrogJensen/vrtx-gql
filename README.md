@@ -54,7 +54,7 @@ This is a Java Implementation of GraphQL. The library aims for real-life usage i
 It takes care of parsing and executing a GraphQL query. It doesn't take care of actually fetching any data:
 Data comes from implementing callbacks or providing static data.
 
-Execution returns promises in the form of [CompletableFutures](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html).
+Execution returns promises in the form of [CompletionStages](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html).
 
 ### Code of Conduct
 
@@ -309,7 +309,7 @@ Example of configuring a custom `DataFetcher`:
 
 DataFetcher calculateComplicatedValue = new DataFetcher() {
     @Override
-    CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+    CompletionStage<Object> get(DataFetchingEnvironment environment) {
         // Create a new promise
         CompletableFuture<Object> promise = new CompletableFuture<>();
         
@@ -336,7 +336,7 @@ GraphQLObjectType objectType = newObject()
 
 To execute a Query/Mutation against a Schema instantiate a new `GraphQL` Object with the appropriate arguments and then call `execute()`.
  
-The result of a Query is a CompletableFuture promise of type `ExecutionResult` Object with the result and/or a list of Errors.
+The result of a Query is a CompletionStage promise of type `ExecutionResult` Object with the result and/or a list of Errors.
 
 Example: [GraphQL Test](src/test/groovy/graphql/GraphQLTest.groovy)
 

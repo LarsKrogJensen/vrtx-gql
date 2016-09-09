@@ -8,6 +8,7 @@ import graphql.schema.GraphQLObjectType
 import spock.lang.Specification
 
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionStage
 
 class ExecutionStrategySpec extends Specification {
 
@@ -16,10 +17,8 @@ class ExecutionStrategySpec extends Specification {
     def setup() {
         executionStrategy = new ExecutionStrategy() {
             @Override
-            CompletableFuture<ExecutionResult> execute(ExecutionContext executionContext, GraphQLObjectType parentType, Object source, Map<String, List<Field>> fields) {
-                CompletableFuture<ExecutionResult> promise = new CompletableFuture<>()
-                promise.complete(null)
-                return promise
+            CompletionStage<ExecutionResult> execute(ExecutionContext executionContext, GraphQLObjectType parentType, Object source, Map<String, List<Field>> fields) {
+                return CompletableFuture.completedFuture(null)
             }
         }
     }

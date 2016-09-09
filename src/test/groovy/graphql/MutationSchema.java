@@ -7,6 +7,7 @@ import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import static graphql.Scalars.GraphQLInt;
 import static graphql.schema.GraphQLArgument.newArgument;
@@ -77,7 +78,7 @@ public class MutationSchema {
                             .type(GraphQLInt))
                     .dataFetcher(new DataFetcher() {
                         @Override
-                        public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+                        public CompletionStage<Object> get(DataFetchingEnvironment environment) {
                             Integer newNumber = environment.getArgument("newNumber");
                             Root root = (Root) environment.getSource();
                             return CompletableFuture.completedFuture(root.changeNumber(newNumber));
@@ -91,7 +92,7 @@ public class MutationSchema {
                             .type(GraphQLInt))
                     .dataFetcher(new DataFetcher() {
                         @Override
-                        public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+                        public CompletionStage<Object> get(DataFetchingEnvironment environment) {
                             Integer newNumber = environment.getArgument("newNumber");
                             Root root = (Root) environment.getSource();
                             CompletableFuture<Object> promise = new CompletableFuture<>();

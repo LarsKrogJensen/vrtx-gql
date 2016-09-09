@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import static java.util.Collections.singletonList;
 
@@ -33,13 +34,13 @@ public class BatchedExecutionStrategy extends ExecutionStrategy {
     private final BatchedDataFetcherFactory batchingFactory = new BatchedDataFetcherFactory();
 
     @Override
-    public CompletableFuture<ExecutionResult> execute(ExecutionContext executionContext, GraphQLObjectType parentType, Object source, Map<String, List<Field>> fields) {
+    public CompletionStage<ExecutionResult> execute(ExecutionContext executionContext, GraphQLObjectType parentType, Object source, Map<String, List<Field>> fields) {
         GraphQLExecutionNodeDatum data = new GraphQLExecutionNodeDatum(new LinkedHashMap<String, Object>(), source);
         GraphQLExecutionNode root = new GraphQLExecutionNode(parentType, fields, singletonList(data));
         return execute(executionContext, root);
     }
 
-    private CompletableFuture<ExecutionResult> execute(ExecutionContext executionContext, GraphQLExecutionNode root) {
+    private CompletionStage<ExecutionResult> execute(ExecutionContext executionContext, GraphQLExecutionNode root) {
 
         CompletableFuture<ExecutionResult> promise = new CompletableFuture<>();
         Queue<GraphQLExecutionNode> nodes = new ArrayDeque<GraphQLExecutionNode>();
@@ -52,7 +53,7 @@ public class BatchedExecutionStrategy extends ExecutionStrategy {
 
             for (String fieldName : node.getFields().keySet()) {
                 List<Field> fieldList = node.getFields().get(fieldName);
-                nodePromises.add(resolveField(executionContext, node.getParentType(),
+                nodePromises.add((CompletableFuture) resolveField(executionContext, node.getParentType(),
                         node.getData(), fieldName, fieldList)
                         .thenAccept(childNodes -> nodes.addAll(childNodes))
                         .exceptionally(e -> {
@@ -78,7 +79,7 @@ public class BatchedExecutionStrategy extends ExecutionStrategy {
     // Use the data.parentResult objects to put values into.  These are either primitives or empty maps
     // If they were empty maps, we need that list of nodes to process
 
-    private CompletableFuture<List<GraphQLExecutionNode>> resolveField(ExecutionContext executionContext, GraphQLObjectType parentType,
+    private CompletionStage<List<GraphQLExecutionNode>> resolveField(ExecutionContext executionContext, GraphQLObjectType parentType,
                                                                        List<GraphQLExecutionNodeDatum> nodeData, String fieldName, List<Field> fields) {
 
         GraphQLFieldDefinition fieldDef = getFieldDef(executionContext.getGraphQLSchema(), parentType, fields.get(0));
@@ -253,7 +254,7 @@ public class BatchedExecutionStrategy extends ExecutionStrategy {
     }
 
     @SuppressWarnings("unchecked")
-    private CompletableFuture<List<GraphQLExecutionNodeValue>> fetchData(ExecutionContext executionContext, GraphQLObjectType parentType,
+    private CompletionStage<List<GraphQLExecutionNodeValue>> fetchData(ExecutionContext executionContext, GraphQLObjectType parentType,
                                                                          List<GraphQLExecutionNodeDatum> nodeData, List<Field> fields, GraphQLFieldDefinition fieldDef) {
 
         Map<String, Object> argumentValues = valuesResolver.getArgumentValues(

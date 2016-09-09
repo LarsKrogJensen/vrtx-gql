@@ -6,6 +6,7 @@ import graphql.schema.GraphQLSchema;
 import org.junit.Test;
 
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import static graphql.Scalars.GraphQLString;
@@ -27,7 +28,7 @@ public class HelloWorld {
         GraphQLSchema schema = GraphQLSchema.newSchema()
                 .query(queryType)
                 .build();
-        Map<String, Object> result = (Map<String, Object>)new GraphQL(schema).execute("{hello}").get().getData();
+        Map<String, Object> result = (Map<String, Object>) ((CompletableFuture<ExecutionResult>) new GraphQL(schema).execute("{hello}")).get().getData();
         System.out.println(result);
     }
 
@@ -44,7 +45,7 @@ public class HelloWorld {
         GraphQLSchema schema = GraphQLSchema.newSchema()
                 .query(queryType)
                 .build();
-        Map<String, Object> result = (Map<String, Object>)new GraphQL(schema).execute("{hello}").get().getData();
+        Map<String, Object> result = (Map<String, Object>) ((CompletableFuture<ExecutionResult>) new GraphQL(schema).execute("{hello}")).get().getData();
         assertEquals("world", result.get("hello"));
     }
 }

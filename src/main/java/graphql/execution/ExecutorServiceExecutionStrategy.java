@@ -34,14 +34,14 @@ public class ExecutorServiceExecutionStrategy extends ExecutionStrategy {
     }
 
     @Override
-    public CompletableFuture<ExecutionResult> execute(final ExecutionContext executionContext, final GraphQLObjectType parentType, final Object source, final Map<String, List<Field>> fields) {
+    public CompletionStage<ExecutionResult> execute(final ExecutionContext executionContext, final GraphQLObjectType parentType, final Object source, final Map<String, List<Field>> fields) {
         if (executorService == null)
             return new SimpleExecutionStrategy().execute(executionContext, parentType, source, fields);
 
-        Map<String, Future<CompletableFuture<ExecutionResult>>> futures = new LinkedHashMap<>();
+        Map<String, Future<CompletionStage<ExecutionResult>>> futures = new LinkedHashMap<>();
         for (String fieldName : fields.keySet()) {
             final List<Field> fieldList = fields.get(fieldName);
-            Callable<CompletableFuture<ExecutionResult>> resolveField =
+            Callable<CompletionStage<ExecutionResult>> resolveField =
                     () -> resolveField(executionContext, parentType, source, fieldList);
             futures.put(fieldName, executorService.submit(resolveField));
         }

@@ -7,6 +7,7 @@ import graphql.schema.DataFetchingEnvironment;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 public class SimpleListConnection implements DataFetcher {
 
@@ -30,7 +31,7 @@ public class SimpleListConnection implements DataFetcher {
 
 
     @Override
-    public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+    public CompletionStage<Object> get(DataFetchingEnvironment environment) {
 
         CompletableFuture<Object> promise = new CompletableFuture<>();
         List<Edge> edges = buildEdges();

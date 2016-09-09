@@ -7,6 +7,7 @@ import graphql.schema.DataFetchingEnvironment;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 /**
  * Given a normal data fetcher as a delegate,
@@ -24,7 +25,7 @@ public class UnbatchedDataFetcher implements BatchedDataFetcher {
 
 
     @Override
-    public CompletableFuture<Object> get(DataFetchingEnvironment environment) {
+    public CompletionStage<Object> get(DataFetchingEnvironment environment) {
         @SuppressWarnings("unchecked")
         List<Object> sources = (List<Object>) environment.getSource();
         List<Object> results = new ArrayList<Object>();
@@ -42,7 +43,7 @@ public class UnbatchedDataFetcher implements BatchedDataFetcher {
                 results.add(null);
                 continue;
             }
-            sourcePromises.add(delegate.get(singleEnv).thenAccept(result -> results.add(result)));
+            sourcePromises.add((CompletableFuture) delegate.get(singleEnv).thenAccept(result -> results.add(result)));
         }
 
         CompletableFuture[] sourcePromisesArray = new CompletableFuture[sourcePromises.size()];

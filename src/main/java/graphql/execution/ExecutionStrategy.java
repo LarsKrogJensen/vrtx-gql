@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import static graphql.introspection.Introspection.*;
 
@@ -20,9 +21,9 @@ public abstract class ExecutionStrategy {
     protected ValuesResolver valuesResolver = new ValuesResolver();
     protected FieldCollector fieldCollector = new FieldCollector();
 
-    public abstract CompletableFuture<ExecutionResult> execute(ExecutionContext executionContext, GraphQLObjectType parentType, Object source, Map<String, List<Field>> fields);
+    public abstract CompletionStage<ExecutionResult> execute(ExecutionContext executionContext, GraphQLObjectType parentType, Object source, Map<String, List<Field>> fields);
 
-    protected CompletableFuture<ExecutionResult> resolveField(ExecutionContext executionContext, GraphQLObjectType parentType, Object source, List<Field> fields) {
+    protected CompletionStage<ExecutionResult> resolveField(ExecutionContext executionContext, GraphQLObjectType parentType, Object source, List<Field> fields) {
         GraphQLFieldDefinition fieldDef = getFieldDef(executionContext.getGraphQLSchema(), parentType, fields.get(0));
 
         Map<String, Object> argumentValues = valuesResolver.getArgumentValues(fieldDef.getArguments(), fields.get(0).getArguments(), executionContext.getVariables());
@@ -48,7 +49,7 @@ public abstract class ExecutionStrategy {
                 .thenCompose(resolvedValue -> completeValue(executionContext, fieldDef.getType(), fields, resolvedValue));
     }
 
-    protected CompletableFuture<ExecutionResult> completeValue(ExecutionContext executionContext, GraphQLType fieldType, List<Field> fields, Object result) {
+    protected CompletionStage<ExecutionResult> completeValue(ExecutionContext executionContext, GraphQLType fieldType, List<Field> fields, Object result) {
         CompletableFuture<ExecutionResult> promise = new CompletableFuture<>();
 
         if (fieldType instanceof GraphQLNonNull) {
@@ -115,7 +116,7 @@ public abstract class ExecutionStrategy {
         return executionContext.getExecutionStrategy().execute(executionContext, resolvedType, result, subFields);
     }
 
-    private CompletableFuture<ExecutionResult> completeValueForList(ExecutionContext executionContext, GraphQLList fieldType, List<Field> fields, Object result) {
+    private CompletionStage<ExecutionResult> completeValueForList(ExecutionContext executionContext, GraphQLList fieldType, List<Field> fields, Object result) {
         if (result.getClass().isArray()) {
             result = Arrays.asList((Object[]) result);
         }
@@ -153,12 +154,12 @@ public abstract class ExecutionStrategy {
         return new ExecutionResultImpl(serialized, null);
     }
 
-    protected CompletableFuture<ExecutionResult> completeValueForList(ExecutionContext executionContext, GraphQLList fieldType, List<Field> fields, List<Object> result) {
+    protected CompletionStage<ExecutionResult> completeValueForList(ExecutionContext executionContext, GraphQLList fieldType, List<Field> fields, List<Object> result) {
 
         List<CompletableFuture> completionPromises = new ArrayList<>();
         List<Object> completedResults = new ArrayList<Object>();
         for (Object item : result) {
-            completionPromises.add(completeValue(executionContext, fieldType.getWrappedType(), fields, item).thenAccept(
+            completionPromises.add((CompletableFuture) completeValue(executionContext, fieldType.getWrappedType(), fields, item).thenAccept(
                     completedValue -> completedResults.add(completedValue != null ? completedValue.getData() : null)));
         }
 
