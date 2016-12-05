@@ -23,7 +23,7 @@ public class ProvidedNonNullArguments extends AbstractRule {
 
     @Override
     public void checkField(Field field) {
-        GraphQLFieldDefinition fieldDef = getValidationContext().getFieldDef();
+        GraphQLFieldDefinition<?> fieldDef = getValidationContext().getFieldDef();
         if (fieldDef == null) return;
         Map<String, Argument> argumentMap = argumentMap(field.getArguments());
 

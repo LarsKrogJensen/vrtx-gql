@@ -115,7 +115,10 @@ public class Relay {
         return args;
     }
 
-    public GraphQLObjectType edgeType(String name, GraphQLOutputType nodeType, GraphQLInterfaceType nodeInterface, List<GraphQLFieldDefinition> edgeFields) {
+    public GraphQLObjectType edgeType(String name,
+                                      GraphQLOutputType nodeType,
+                                      GraphQLInterfaceType nodeInterface,
+                                      List<GraphQLFieldDefinition<?>> edgeFields) {
 
         GraphQLObjectType edgeType = newObject()
                 .name(name + "Edge")
@@ -133,7 +136,9 @@ public class Relay {
         return edgeType;
     }
 
-    public GraphQLObjectType connectionType(String name, GraphQLObjectType edgeType, List<GraphQLFieldDefinition> connectionFields) {
+    public GraphQLObjectType connectionType(String name,
+                                            GraphQLObjectType edgeType,
+                                            List<GraphQLFieldDefinition<?>> connectionFields) {
 
         GraphQLObjectType connectionType = newObject()
                 .name(name + "Connection")
@@ -152,7 +157,7 @@ public class Relay {
 
     public GraphQLFieldDefinition mutationWithClientMutationId(String name, String fieldName,
                                                                List<GraphQLInputObjectField> inputFields,
-                                                               List<GraphQLFieldDefinition> outputFields,
+                                                               List<GraphQLFieldDefinition<?>> outputFields,
                                                                DataFetcher dataFetcher) {
         GraphQLInputObjectType inputObjectType = newInputObject()
                 .name(name + "Input")

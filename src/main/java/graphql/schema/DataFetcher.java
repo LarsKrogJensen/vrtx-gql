@@ -3,7 +3,7 @@ package graphql.schema;
 
 import java.util.concurrent.CompletionStage;
 
-public interface DataFetcher {
+public interface DataFetcher<T> {
 
-    CompletionStage<Object> get(DataFetchingEnvironment environment);
+    CompletionStage<T> get(DataFetchingEnvironment environment);
 }

@@ -10,7 +10,7 @@ import java.util.concurrent.CompletionStage;
 
 import static graphql.Scalars.GraphQLBoolean;
 
-public class PropertyDataFetcher implements DataFetcher {
+public class PropertyDataFetcher<T> implements DataFetcher<T> {
 
     private final String propertyName;
 
@@ -19,17 +19,18 @@ public class PropertyDataFetcher implements DataFetcher {
     }
 
     @Override
-    public CompletionStage<Object> get(DataFetchingEnvironment environment) {
-        CompletableFuture<Object> promise = new CompletableFuture<>();
+    public CompletionStage<T> get(DataFetchingEnvironment environment) {
+        CompletableFuture<T> promise = new CompletableFuture<>();
         Object source = environment.getSource();
         if (source == null) return null;
         if (source instanceof Map) {
-            promise.complete(((Map<?, ?>) source).get(propertyName));
+            promise.complete((T)((Map<?, ?>) source).get(propertyName));
             return promise;
         }
-        promise.complete(getPropertyViaGetter(source, environment.getFieldType()));
+        promise.complete((T)getPropertyViaGetter(source, environment.getFieldType()));
         return promise;
     }
+
 
     private Object getPropertyViaGetter(Object object, GraphQLOutputType outputType) {
         try {

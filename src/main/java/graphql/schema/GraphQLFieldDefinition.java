@@ -9,17 +9,24 @@ import java.util.concurrent.CompletionStage;
 
 import static graphql.Assert.assertNotNull;
 
-public class GraphQLFieldDefinition {
+public class GraphQLFieldDefinition<T>
+{
 
     private final String name;
     private final String description;
     private GraphQLOutputType type;
-    private final DataFetcher dataFetcher;
+    private final DataFetcher<T> dataFetcher;
     private final String deprecationReason;
-    private final List<GraphQLArgument> arguments = new ArrayList<GraphQLArgument>();
+    private final List<GraphQLArgument> arguments = new ArrayList<>();
 
 
-    public GraphQLFieldDefinition(String name, String description, GraphQLOutputType type, DataFetcher dataFetcher, List<GraphQLArgument> arguments, String deprecationReason) {
+    public GraphQLFieldDefinition(String name,
+                                  String description,
+                                  GraphQLOutputType type,
+                                  DataFetcher<T> dataFetcher,
+                                  List<GraphQLArgument> arguments,
+                                  String deprecationReason)
+    {
         assertNotNull(name, "name can't be null");
         assertNotNull(dataFetcher, "dataFetcher can't be null");
         assertNotNull(type, "type can't be null");
@@ -33,100 +40,114 @@ public class GraphQLFieldDefinition {
     }
 
 
-    void replaceTypeReferences(Map<String, GraphQLType> typeMap) {
-        type = (GraphQLOutputType) new SchemaUtil().resolveTypeReference(type, typeMap);
+    void replaceTypeReferences(Map<String, GraphQLType> typeMap)
+    {
+        type = (GraphQLOutputType)new SchemaUtil().resolveTypeReference(type, typeMap);
     }
 
-    public String getName() {
+    public String getName()
+    {
         return name;
     }
 
 
-    public GraphQLOutputType getType() {
+    public GraphQLOutputType getType()
+    {
         return type;
     }
 
-    public DataFetcher getDataFetcher() {
+    public DataFetcher<T> getDataFetcher()
+    {
         return dataFetcher;
     }
 
-    public GraphQLArgument getArgument(String name) {
+    public GraphQLArgument getArgument(String name)
+    {
         for (GraphQLArgument argument : arguments) {
             if (argument.getName().equals(name)) return argument;
         }
         return null;
     }
 
-    public List<GraphQLArgument> getArguments() {
+    public List<GraphQLArgument> getArguments()
+    {
         return new ArrayList<GraphQLArgument>(arguments);
     }
 
-    public String getDescription() {
+    public String getDescription()
+    {
         return description;
     }
 
-    public String getDeprecationReason() {
+    public String getDeprecationReason()
+    {
         return deprecationReason;
     }
 
-    public boolean isDeprecated() {
+    public boolean isDeprecated()
+    {
         return deprecationReason != null;
     }
 
-    public static Builder newFieldDefinition() {
-        return new Builder();
+    public static <T> Builder<T> newFieldDefinition()
+    {
+        return new Builder<>();
     }
 
-    public static class Builder {
+    public static class Builder<T>
+    {
 
         private String name;
         private String description;
         private GraphQLOutputType type;
-        private DataFetcher dataFetcher;
-        private List<GraphQLArgument> arguments = new ArrayList<GraphQLArgument>();
+        private DataFetcher<T> dataFetcher;
+        private List<GraphQLArgument> arguments = new ArrayList<>();
         private String deprecationReason;
         private boolean isField;
 
 
-        public Builder name(String name) {
+        public Builder<T> name(String name)
+        {
             this.name = name;
             return this;
         }
 
-        public Builder description(String description) {
+        public Builder<T> description(String description)
+        {
             this.description = description;
             return this;
         }
 
-        public Builder type(GraphQLObjectType.Builder builder) {
+        public Builder<T> type(GraphQLObjectType.Builder builder)
+        {
             return type(builder.build());
         }
 
-        public Builder type(GraphQLInterfaceType.Builder builder) {
+        public Builder<T> type(GraphQLInterfaceType.Builder builder)
+        {
             return type(builder.build());
         }
 
-        public Builder type(GraphQLUnionType.Builder builder) {
+        public Builder<T> type(GraphQLUnionType.Builder builder)
+        {
             return type(builder.build());
         }
 
-        public Builder type(GraphQLOutputType type) {
+        public Builder<T> type(GraphQLOutputType type)
+        {
             this.type = type;
             return this;
         }
 
-        public Builder dataFetcher(DataFetcher dataFetcher) {
+        public Builder<T> dataFetcher(DataFetcher<T> dataFetcher)
+        {
             this.dataFetcher = dataFetcher;
             return this;
         }
 
-        public Builder staticValue(final Object value) {
-            this.dataFetcher = new DataFetcher() {
-                @Override
-                public CompletionStage<Object> get(DataFetchingEnvironment environment) {
-                    return CompletableFuture.completedFuture(value);
-                }
-            };
+        public Builder<T> staticValue(final T value)
+        {
+            this.dataFetcher = environment -> CompletableFuture.completedFuture(value);
             return this;
         }
 
@@ -135,12 +156,14 @@ public class GraphQLFieldDefinition {
          *
          * @return this builder
          */
-        public Builder fetchField() {
+        public Builder<T> fetchField()
+        {
             this.isField = true;
             return this;
         }
 
-        public Builder argument(GraphQLArgument argument) {
+        public Builder<T> argument(GraphQLArgument argument)
+        {
             this.arguments.add(argument);
             return this;
         }
@@ -157,7 +180,8 @@ public class GraphQLFieldDefinition {
          * @param builderFunction a supplier for the builder impl
          * @return this
          */
-        public Builder argument(BuilderFunction<GraphQLArgument.Builder> builderFunction) {
+        public Builder<T> argument(BuilderFunction<GraphQLArgument.Builder> builderFunction)
+        {
             GraphQLArgument.Builder builder = GraphQLArgument.newArgument();
             builder = builderFunction.apply(builder);
             return argument(builder);
@@ -170,30 +194,34 @@ public class GraphQLFieldDefinition {
          * @param builder an un-built/incomplete GraphQLArgument
          * @return this
          */
-        public Builder argument(GraphQLArgument.Builder builder) {
+        public Builder<T> argument(GraphQLArgument.Builder builder)
+        {
             this.arguments.add(builder.build());
             return this;
         }
 
-        public Builder argument(List<GraphQLArgument> arguments) {
+        public Builder<T> argument(List<GraphQLArgument> arguments)
+        {
             this.arguments.addAll(arguments);
             return this;
         }
 
-        public Builder deprecate(String deprecationReason) {
+        public Builder<T> deprecate(String deprecationReason)
+        {
             this.deprecationReason = deprecationReason;
             return this;
         }
 
-        public GraphQLFieldDefinition build() {
+        public GraphQLFieldDefinition<T> build()
+        {
             if (dataFetcher == null) {
                 if (isField) {
-                    dataFetcher = new FieldDataFetcher(name);
+                    dataFetcher = new FieldDataFetcher<>(name);
                 } else {
-                    dataFetcher = new PropertyDataFetcher(name);
+                    dataFetcher = new PropertyDataFetcher<>(name);
                 }
             }
-            return new GraphQLFieldDefinition(name, description, type, dataFetcher, arguments, deprecationReason);
+            return new GraphQLFieldDefinition<>(name, description, type, dataFetcher, arguments, deprecationReason);
         }
 
 

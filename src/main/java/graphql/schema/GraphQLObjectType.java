@@ -13,10 +13,10 @@ public class GraphQLObjectType implements GraphQLType, GraphQLOutputType, GraphQ
 
     private final String name;
     private final String description;
-    private final Map<String, GraphQLFieldDefinition> fieldDefinitionsByName = new LinkedHashMap<String, GraphQLFieldDefinition>();
+    private final Map<String, GraphQLFieldDefinition<?>> fieldDefinitionsByName = new LinkedHashMap<>();
     private final List<GraphQLInterfaceType> interfaces = new ArrayList<GraphQLInterfaceType>();
 
-    public GraphQLObjectType(String name, String description, List<GraphQLFieldDefinition> fieldDefinitions, List<GraphQLInterfaceType> interfaces) {
+    public GraphQLObjectType(String name, String description, List<GraphQLFieldDefinition<?>> fieldDefinitions, List<GraphQLInterfaceType> interfaces) {
         assertNotNull(name, "name can't be null");
         assertNotNull(fieldDefinitions, "fieldDefinitions can't be null");
         assertNotNull(interfaces, "interfaces can't be null");
@@ -26,7 +26,7 @@ public class GraphQLObjectType implements GraphQLType, GraphQLOutputType, GraphQ
         buildDefinitionMap(fieldDefinitions);
     }
 
-    private void buildDefinitionMap(List<GraphQLFieldDefinition> fieldDefinitions) {
+    private void buildDefinitionMap(List<GraphQLFieldDefinition<?>> fieldDefinitions) {
         for (GraphQLFieldDefinition fieldDefinition : fieldDefinitions) {
             String name = fieldDefinition.getName();
             if (fieldDefinitionsByName.containsKey(name))
@@ -78,7 +78,7 @@ public class GraphQLObjectType implements GraphQLType, GraphQLOutputType, GraphQ
     public static class Builder {
         private String name;
         private String description;
-        private List<GraphQLFieldDefinition> fieldDefinitions = new ArrayList<GraphQLFieldDefinition>();
+        private List<GraphQLFieldDefinition<?>> fieldDefinitions = new ArrayList<>();
         private List<GraphQLInterfaceType> interfaces = new ArrayList<GraphQLInterfaceType>();
 
         public Builder name(String name) {
@@ -91,7 +91,7 @@ public class GraphQLObjectType implements GraphQLType, GraphQLOutputType, GraphQ
             return this;
         }
 
-        public Builder field(GraphQLFieldDefinition fieldDefinition) {
+        public <T> Builder field(GraphQLFieldDefinition<T> fieldDefinition) {
             assertNotNull(fieldDefinition, "fieldDefinition can't be null");
             this.fieldDefinitions.add(fieldDefinition);
             return this;
@@ -109,7 +109,7 @@ public class GraphQLObjectType implements GraphQLType, GraphQLOutputType, GraphQ
          * @param builderFunction a supplier for the builder impl
          * @return this
          */
-        public Builder field(BuilderFunction<GraphQLFieldDefinition.Builder> builderFunction) {
+        public <T> Builder field(BuilderFunction<GraphQLFieldDefinition.Builder<T>> builderFunction) {
             assertNotNull(builderFunction, "builderFunction can't be null");
             GraphQLFieldDefinition.Builder builder = GraphQLFieldDefinition.newFieldDefinition();
             builder = builderFunction.apply(builder);
@@ -123,12 +123,12 @@ public class GraphQLObjectType implements GraphQLType, GraphQLOutputType, GraphQ
          * @param builder an un-built/incomplete GraphQLFieldDefinition
          * @return this
          */
-        public Builder field(GraphQLFieldDefinition.Builder builder) {
+        public <T>Builder field(GraphQLFieldDefinition.Builder<T> builder) {
             this.fieldDefinitions.add(builder.build());
             return this;
         }
 
-        public Builder fields(List<GraphQLFieldDefinition> fieldDefinitions) {
+        public Builder fields(List<GraphQLFieldDefinition<?>> fieldDefinitions) {
             assertNotNull(fieldDefinitions, "fieldDefinitions can't be null");
             this.fieldDefinitions.addAll(fieldDefinitions);
             return this;

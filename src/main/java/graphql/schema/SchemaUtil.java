@@ -67,8 +67,10 @@ public class SchemaUtil {
         if (result.containsKey(interfaceType.getName())) return;
         result.put(interfaceType.getName(), interfaceType);
 
-        for (GraphQLFieldDefinition fieldDefinition : interfaceType.getFieldDefinitions()) {
+        for (GraphQLFieldDefinition<?> fieldDefinition : interfaceType.getFieldDefinitions()) {
             collectTypes(fieldDefinition.getType(), result);
+
+
             for (GraphQLArgument fieldArgument : fieldDefinition.getArguments()) {
                 collectTypes(fieldArgument.getType(), result);
             }
@@ -80,8 +82,10 @@ public class SchemaUtil {
         if (result.containsKey(objectType.getName())) return;
         result.put(objectType.getName(), objectType);
 
-        for (GraphQLFieldDefinition fieldDefinition : objectType.getFieldDefinitions()) {
+        for (GraphQLFieldDefinition<?> fieldDefinition : objectType.getFieldDefinitions()) {
             collectTypes(fieldDefinition.getType(), result);
+
+
             for (GraphQLArgument fieldArgument : fieldDefinition.getArguments()) {
                 collectTypes(fieldArgument.getType(), result);
             }

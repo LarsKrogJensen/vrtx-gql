@@ -43,7 +43,7 @@ public abstract class ExecutionStrategy {
 
         return fieldDef.getDataFetcher().get(environment)
                 .exceptionally(e -> {
-                    executionContext.addError(new ExceptionWhileDataFetching(e));
+                    executionContext.addError(new ExceptionWhileDataFetching((Throwable)e));
                     return null;
                 })
                 .thenCompose(resolvedValue -> completeValue(executionContext, fieldDef.getType(), fields, resolvedValue));

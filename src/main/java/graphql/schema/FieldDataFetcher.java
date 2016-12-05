@@ -9,7 +9,7 @@ import java.util.concurrent.CompletionStage;
 /**
  * Fetches data directly from a field.
  */
-public class FieldDataFetcher implements DataFetcher {
+public class FieldDataFetcher<T> implements DataFetcher<T> {
 
     /**
      * The name of the field.
@@ -26,16 +26,16 @@ public class FieldDataFetcher implements DataFetcher {
     }
 
     @Override
-    public CompletionStage<Object> get(DataFetchingEnvironment environment) {
-        CompletableFuture<Object> promise = new CompletableFuture<>();
+    public CompletionStage<T> get(DataFetchingEnvironment environment) {
+        CompletableFuture<T> promise = new CompletableFuture<>();
 
         Object source = environment.getSource();
         if (source == null) return null;
         if (source instanceof Map) {
-            promise.complete(((Map<?, ?>) source).get(fieldName));
+            promise.complete((T)((Map<?, ?>) source).get(fieldName));
             return promise;
         }
-        promise.complete(getFieldValue(source, environment.getFieldType()));
+        promise.complete((T)getFieldValue(source, environment.getFieldType()));
         return promise;
     }
 
@@ -46,10 +46,10 @@ public class FieldDataFetcher implements DataFetcher {
      * @param outputType The output type; ignored in this case.
      * @return An object, or null.
      */
-    private Object getFieldValue(Object object, GraphQLOutputType outputType) {
+    private T getFieldValue(Object object, GraphQLOutputType outputType) {
         try {
             Field field = object.getClass().getField(fieldName);
-            return field.get(object);
+            return (T)field.get(object);
         } catch (NoSuchFieldException e) {
             return null;
         } catch (IllegalAccessException e) {
